@@ -24,7 +24,11 @@ class DocxConverterBundled {
 
       const mdast = processor.parse(markdown);
 
-      // 2. Convert MDAST to DOCX blob
+      // 2. Transform math nodes to text nodes
+      // mdast2docx doesn't support math nodes, so we convert them to text
+      this.transformMathNodes(mdast);
+
+      // 3. Convert MDAST to DOCX blob
       const docxBlob = await toDocx(
         mdast,
         {
@@ -44,6 +48,36 @@ class DocxConverterBundled {
     } catch (error) {
       console.error('mdast2docx conversion failed:', error);
       throw new Error('DOCX dönüşümü başarısız: ' + error.message);
+    }
+  }
+
+  /**
+   * Transform math and inlineMath nodes to text nodes
+   * This is necessary because mdast2docx doesn't support math nodes
+   * @param {Object} node - MDAST node
+   */
+  transformMathNodes(node) {
+    if (!node) return;
+
+    // Handle math nodes (block equations $$...$$)
+    if (node.type === 'math') {
+      node.type = 'text';
+      node.value = `$$${node.value}$$`;
+      delete node.meta;
+      return;
+    }
+
+    // Handle inlineMath nodes (inline equations $...$)
+    if (node.type === 'inlineMath') {
+      node.type = 'text';
+      node.value = `$${node.value}$`;
+      delete node.meta;
+      return;
+    }
+
+    // Recursively process children
+    if (node.children && Array.isArray(node.children)) {
+      node.children.forEach(child => this.transformMathNodes(child));
     }
   }
 }
