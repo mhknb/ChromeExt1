@@ -45,14 +45,5 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Keyboard shortcut (opsiyonel - ileride eklenebilir)
-chrome.commands.onCommand.addListener((command) => {
-  if (command === 'clean-copy') {
-    // Aktif tab'a mesaj gönder
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'cleanCopy' });
-      }
-    });
-  }
-});
+// Keyboard shortcut desteği için manifest.json'da "commands" izni gerekli
+// İleride eklenebilir
