@@ -101,6 +101,10 @@ function cleanMarkdown(text, settings) {
 
   let cleaned = text;
 
+  // 0. Platform-specific başlıkları temizle (ChatGPT said:, Claude said:, etc.)
+  cleaned = cleaned.replace(/^(ChatGPT|Claude|Gemini|DeepSeek)\s+(said|söyledi):\s*/gim, '');
+  cleaned = cleaned.replace(/^(ChatGPT|Claude|Gemini|DeepSeek)\s*$/gim, '');
+
   // 1. Markdown başlıkları temizle (###, ##, #)
   cleaned = cleaned.replace(/^#{1,6}\s+/gm, '');
 
