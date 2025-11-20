@@ -7,11 +7,9 @@ module.exports = {
   output: {
     filename: 'docx-converter-bundled.js',
     path: path.resolve(__dirname, 'lib'),
-    library: {
-      name: 'DocxConverterBundled',
-      type: 'window',
-      export: 'default'
-    }
+    library: 'DocxConverterBundled',
+    libraryTarget: 'window',
+    libraryExport: 'default'
   },
   resolve: {
     extensions: ['.js', '.mjs'],
