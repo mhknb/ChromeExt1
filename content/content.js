@@ -184,18 +184,17 @@ async function handleExportPdf(platform, settings) {
 
 // DOCX dosyası oluştur ve indir
 async function downloadDocx(content, settings) {
-  // docx kütüphanesini kullanmak yerine basit bir HTML-to-DOCX yaklaşımı
-  // RTF formatında da kaydedilebilir
-
-  const docxContent = createDocxContent(content, settings);
-  const blob = new Blob([docxContent], {
-    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  // RTF formatı kullanıyoruz - Word tarafından desteklenir
+  const rtfContent = createRtfContent(content, settings);
+  const blob = new Blob([rtfContent], {
+    type: 'application/rtf'
   });
 
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `ai-export-${Date.now()}.docx`;
+  // .docx yerine .rtf uzantısı - Word açabilir
+  a.download = `ai-export-${Date.now()}.rtf`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -217,19 +216,24 @@ async function downloadPdf(content, settings) {
   }, 500);
 }
 
-// DOCX için basit RTF içerik oluştur
-function createDocxContent(content, settings) {
-  // Basit RTF formatı - Word tarafından açılabilir
-  const rtfHeader = `{\\rtf1\\ansi\\deff0
-{\\fonttbl{\\f0 Times New Roman;}}
+// RTF içerik oluştur (Word tarafından açılabilir)
+function createRtfContent(content, settings) {
+  // RTF formatı - Word tarafından desteklenir
+  const rtfHeader = `{\\rtf1\\ansi\\ansicpg1252\\deff0\\nouicompat\\deflang1033
+{\\fonttbl{\\f0\\fnil\\fcharset0 Calibri;}{\\f1\\fnil\\fcharset2 Symbol;}}
 {\\colortbl;\\red0\\green0\\blue0;}
-\\f0\\fs24`;
+{\\*\\generator AI Content Exporter}
+\\viewkind4\\uc1\\pard\\sa200\\sl276\\slmult1\\f0\\fs22 `;
 
+  // Özel karakterleri escape et
   let rtfContent = content
-    .replace(/\n/g, '\\par\n')
-    .replace(/[{}\\]/g, '\\$&');
+    .replace(/\\/g, '\\\\')  // \ karakterini escape et
+    .replace(/{/g, '\\{')    // { karakterini escape et
+    .replace(/}/g, '\\}')    // } karakterini escape et
+    .replace(/\n\n/g, '\\par\\par ')  // Paragraf ayırıcı
+    .replace(/\n/g, '\\par ');  // Satır sonu
 
-  return rtfHeader + rtfContent + '}';
+  return rtfHeader + rtfContent + '\\par}';
 }
 
 // PDF için HTML içerik oluştur
@@ -292,16 +296,33 @@ function createPdfHtmlContent(content, settings) {
 (function initialize() {
   console.log('AI Content Exporter loaded');
 
-  // Butonu sayfaya ekle (opsiyonel - inline kullanım için)
-  addFloatingButton();
+  // Butonu sayfaya ekle (DOM hazır olduğunda)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addFloatingButton);
+  } else {
+    // DOM zaten hazır
+    setTimeout(addFloatingButton, 1000);
+  }
 })();
 
 // Floating button ekle (hızlı erişim için)
 function addFloatingButton() {
+  // Eğer zaten varsa ekleme
+  if (document.getElementById('ai-exporter-btn')) {
+    return;
+  }
+
+  // Body'nin hazır olduğunu kontrol et
+  if (!document.body) {
+    console.warn('AI Exporter: Body not ready, retrying...');
+    setTimeout(addFloatingButton, 500);
+    return;
+  }
+
   const button = document.createElement('div');
   button.id = 'ai-exporter-btn';
   button.innerHTML = `
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
     </svg>
@@ -320,13 +341,34 @@ function addFloatingButton() {
 
     if (result.success) {
       button.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+      button.innerHTML = '✓';
+      button.style.fontSize = '24px';
+      button.style.color = 'white';
+
       setTimeout(() => {
         button.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-      }, 1000);
+        button.innerHTML = `
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        `;
+      }, 1500);
+    } else {
+      // Hata durumunda
+      button.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+      setTimeout(() => {
+        button.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      }, 1500);
     }
   });
 
-  document.body.appendChild(button);
+  try {
+    document.body.appendChild(button);
+    console.log('AI Exporter: Floating button added');
+  } catch (error) {
+    console.error('AI Exporter: Failed to add button', error);
+  }
 }
 
 // Platform tespiti

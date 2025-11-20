@@ -76,7 +76,7 @@ async function handleCleanCopy() {
 }
 
 async function handleExportDocx() {
-  showStatus('DOCX dosyası oluşturuluyor...', 'info');
+  showStatus('Word dosyası oluşturuluyor...', 'info');
 
   const settings = await getSettings();
 
@@ -93,9 +93,9 @@ async function handleExportDocx() {
     }
 
     if (response && response.success) {
-      showStatus('✓ DOCX dosyası indirildi!', 'success');
+      showStatus('✓ Word dosyası indirildi!', 'success');
     } else {
-      showStatus('DOCX oluşturulamadı', 'error');
+      showStatus('Word dosyası oluşturulamadı', 'error');
     }
   });
 }
