@@ -102,8 +102,12 @@ function cleanMarkdown(text, settings) {
   let cleaned = text;
 
   // 0. Platform-specific başlıkları temizle (ChatGPT said:, Claude said:, etc.)
-  cleaned = cleaned.replace(/^(ChatGPT|Claude|Gemini|DeepSeek)\s+(said|söyledi):\s*/gim, '');
-  cleaned = cleaned.replace(/^(ChatGPT|Claude|Gemini|DeepSeek)\s*$/gim, '');
+  // Satır başında veya metin başında temizle
+  cleaned = cleaned.replace(/(^|\n)(ChatGPT|Claude|Gemini|DeepSeek)\s+(said|söyledi):\s*/gi, '$1');
+  cleaned = cleaned.replace(/(^|\n)(ChatGPT|Claude|Gemini|DeepSeek)\s*(\n|$)/gi, '$1');
+
+  // Başta boşluklarla gelirse temizle
+  cleaned = cleaned.replace(/^\s*(ChatGPT|Claude|Gemini|DeepSeek)\s+(said|söyledi):\s*/i, '');
 
   // 1. Markdown başlıkları temizle (###, ##, #)
   cleaned = cleaned.replace(/^#{1,6}\s+/gm, '');
@@ -458,7 +462,14 @@ function addExportButtonsToMessage(messageElement, platform) {
       e.stopPropagation();
 
       const action = btn.dataset.action;
-      const content = messageElement.textContent || messageElement.innerText;
+
+      // İçeriği al - butonları exclude et
+      const contentElement = messageElement.cloneNode(true);
+      // Butonları clone'dan kaldır
+      const buttons = contentElement.querySelector('.ai-export-buttons');
+      if (buttons) buttons.remove();
+
+      const content = contentElement.textContent || contentElement.innerText;
 
       await handleExportAction(action, content, btn);
     });
