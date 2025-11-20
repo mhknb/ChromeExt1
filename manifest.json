@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Content Exporter - Clean Copy & Multi-Format Export",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "Copy AI responses without markdown, export to DOCX/PDF. Supports ChatGPT, Claude, Gemini & DeepSeek.",
   "permissions": [
     "activeTab",
@@ -32,7 +32,7 @@
         "https://gemini.google.com/*",
         "https://chat.deepseek.com/*"
       ],
-      "js": ["lib/zip-generator.js", "lib/docx-converter.js", "content/content.js"],
+      "js": ["lib/docx-converter-bundled.js", "content/content.js"],
       "css": ["content/content.css"],
       "run_at": "document_end"
     }

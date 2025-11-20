@@ -259,12 +259,12 @@ async function downloadTxt(content, settings) {
 // DOCX dosyası oluştur ve indir
 async function downloadDocx(content, settings) {
   try {
-    // Use DocxConverter from lib/docx-converter.js
-    if (typeof window.DocxConverter === 'undefined') {
+    // Use DocxConverterBundled from lib/docx-converter-bundled.js
+    if (typeof window.DocxConverterBundled === 'undefined') {
       throw new Error('DOCX converter yüklenemedi');
     }
 
-    const converter = new window.DocxConverter();
+    const converter = new window.DocxConverterBundled();
     const docxBlob = await converter.convertMarkdownToDocx(content);
 
     const url = URL.createObjectURL(docxBlob);
