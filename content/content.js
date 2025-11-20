@@ -426,26 +426,23 @@ function addExportButtonsToMessage(messageElement, platform) {
   buttonsContainer.className = 'ai-export-buttons';
   buttonsContainer.innerHTML = `
     <button class="ai-export-btn" data-action="copy" title="Temiz metin kopyala">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+      <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20" fill="currentColor">
+        <path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/>
       </svg>
     </button>
     <button class="ai-export-btn" data-action="txt" title="TXT olarak indir">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
-        <text x="8" y="16" font-size="6" fill="currentColor" font-weight="bold" font-family="Arial">TXT</text>
+      <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20" fill="currentColor">
+        <path d="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z"/>
       </svg>
     </button>
     <button class="ai-export-btn" data-action="docx" title="DOCX olarak indir">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
-        <text x="10" y="16.5" font-size="8" fill="currentColor" font-weight="bold" font-family="Arial">W</text>
+      <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20" fill="currentColor">
+        <path d="M320-440h320v-80H320v80Zm0 120h320v-80H320v80Zm-80 240q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z"/>
       </svg>
     </button>
     <button class="ai-export-btn" data-action="pdf" title="PDF olarak indir">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
-        <text x="7" y="16" font-size="5.5" fill="currentColor" font-weight="bold" font-family="Arial">PDF</text>
+      <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20" fill="currentColor">
+        <path d="M320-720h320v-80H320v80Zm0 560h320v-80H320v80Zm-80 80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h480q33 0 56.5 23.5T800-800v640q0 33-23.5 56.5T720-80H240Zm0-80h480v-640H240v640Zm0 0v-640 640Z"/>
       </svg>
     </button>
   `;
