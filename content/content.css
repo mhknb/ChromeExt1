@@ -1,0 +1,52 @@
+/* Content script styles - Floating button */
+
+#ai-exporter-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  cursor: pointer;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+#ai-exporter-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+}
+
+#ai-exporter-btn:active {
+  transform: scale(0.95);
+}
+
+#ai-exporter-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: white;
+  stroke-width: 2;
+}
+
+/* Animasyon - başarılı kopyalama */
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+#ai-exporter-btn.success {
+  animation: successPulse 0.5s ease;
+}
