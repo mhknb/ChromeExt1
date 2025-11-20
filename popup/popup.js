@@ -102,7 +102,7 @@ async function handleExportTxt() {
 }
 
 async function handleExportDocx() {
-  showStatus('RTF dosyası oluşturuluyor...', 'info');
+  showStatus('DOCX dosyası oluşturuluyor...', 'info');
 
   const settings = await getSettings();
 
@@ -119,9 +119,9 @@ async function handleExportDocx() {
     }
 
     if (response && response.success) {
-      showStatus('✓ RTF dosyası indirildi!', 'success');
+      showStatus('✓ DOCX dosyası indirildi!', 'success');
     } else {
-      showStatus('RTF oluşturulamadı', 'error');
+      showStatus('DOCX oluşturulamadı', 'error');
     }
   });
 }

@@ -165,7 +165,7 @@ async function handleExportTxt(platform, settings) {
   }
 }
 
-// RTF export handler (DOCX butonu RTF indirir)
+// DOCX export handler
 async function handleExportDocx(platform, settings) {
   try {
     const content = extractLastMessage(platform);
@@ -173,15 +173,16 @@ async function handleExportDocx(platform, settings) {
       throw new Error('Mesaj bulunamadı');
     }
 
+    // Don't clean markdown if preserving code blocks - keep original formatting
     const processedContent = settings.preserveCodeBlocks
       ? content
       : cleanMarkdown(content, settings);
 
-    await downloadRtf(processedContent, settings);
+    await downloadDocx(processedContent, settings);
 
     return { success: true };
   } catch (error) {
-    console.error('RTF export error:', error);
+    console.error('DOCX export error:', error);
     return { success: false, error: error.message };
   }
 }
@@ -223,7 +224,32 @@ async function downloadTxt(content, settings) {
   URL.revokeObjectURL(url);
 }
 
-// RTF dosyası oluştur ve indir
+// DOCX dosyası oluştur ve indir
+async function downloadDocx(content, settings) {
+  try {
+    // Use DocxConverter from lib/docx-converter.js
+    if (typeof window.DocxConverter === 'undefined') {
+      throw new Error('DOCX converter yüklenemedi');
+    }
+
+    const converter = new window.DocxConverter();
+    const docxBlob = await converter.convertMarkdownToDocx(content);
+
+    const url = URL.createObjectURL(docxBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-export-${Date.now()}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('DOCX generation failed:', error);
+    throw error;
+  }
+}
+
+// RTF dosyası oluştur ve indir (TXT butonundan sonra kaldırılabilir)
 async function downloadRtf(content, settings) {
   const rtfContent = createRtfContent(content, settings);
   const blob = new Blob([rtfContent], {
