@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Content Exporter - Clean Copy & Multi-Format Export",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Copy AI responses without markdown, export to DOCX/PDF. Supports ChatGPT, Claude, Gemini & DeepSeek.",
   "permissions": [
     "activeTab",
