@@ -5,14 +5,13 @@
   gap: 8px;
   margin-top: 12px;
   padding: 8px 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
   flex-wrap: wrap;
 }
 
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .ai-export-buttons {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    /* Removed border */
   }
 }
 
