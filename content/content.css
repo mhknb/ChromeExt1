@@ -2,9 +2,9 @@
 
 .ai-export-buttons {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  padding: 8px 0;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 4px 0;
   flex-wrap: wrap;
 }
 
@@ -16,42 +16,43 @@
 }
 
 .ai-export-btn {
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 6px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
   border-radius: 6px;
-  background: linear-gradient(to bottom, #ffffff, #f8f9fa);
-  color: #333;
+  background: rgba(142, 142, 160, 0.2);
+  color: rgba(0, 0, 0, 0.6);
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
 .ai-export-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-  background: linear-gradient(to bottom, #ffffff, #f0f1f3);
-  border-color: rgba(0, 0, 0, 0.25);
+  background: rgba(142, 142, 160, 0.3);
+  color: rgba(0, 0, 0, 0.8);
 }
 
 .ai-export-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transform: scale(0.95);
+}
+
+.ai-export-btn svg {
+  display: block;
 }
 
 /* Dark mode button styles */
 @media (prefers-color-scheme: dark) {
   .ai-export-btn {
-    background: linear-gradient(to bottom, #3a3a3a, #2d2d2d);
-    color: #e0e0e0;
-    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(142, 142, 160, 0.2);
+    color: rgba(255, 255, 255, 0.7);
   }
 
   .ai-export-btn:hover {
-    background: linear-gradient(to bottom, #454545, #383838);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(142, 142, 160, 0.3);
+    color: rgba(255, 255, 255, 0.9);
   }
 }
 

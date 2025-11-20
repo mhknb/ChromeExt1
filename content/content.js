@@ -426,32 +426,27 @@ function addExportButtonsToMessage(messageElement, platform) {
   buttonsContainer.className = 'ai-export-buttons';
   buttonsContainer.innerHTML = `
     <button class="ai-export-btn" data-action="copy" title="Temiz metin kopyala">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
       </svg>
-      <span>Copy</span>
     </button>
     <button class="ai-export-btn" data-action="txt" title="TXT olarak indir">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-        <polyline points="14 2 14 8 20 8"></polyline>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+        <text x="8" y="16" font-size="6" fill="currentColor" font-weight="bold" font-family="Arial">TXT</text>
       </svg>
-      <span>TXT</span>
     </button>
     <button class="ai-export-btn" data-action="docx" title="DOCX olarak indir">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-        <polyline points="14 2 14 8 20 8"></polyline>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+        <text x="10" y="16.5" font-size="8" fill="currentColor" font-weight="bold" font-family="Arial">W</text>
       </svg>
-      <span>DOCX</span>
     </button>
     <button class="ai-export-btn" data-action="pdf" title="PDF olarak indir">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-        <polyline points="14 2 14 8 20 8"></polyline>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/>
+        <text x="7" y="16" font-size="5.5" fill="currentColor" font-weight="bold" font-family="Arial">PDF</text>
       </svg>
-      <span>PDF</span>
     </button>
   `;
 
