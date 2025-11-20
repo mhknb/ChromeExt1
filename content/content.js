@@ -363,79 +363,197 @@ function createPdfHtmlContent(content, settings) {
 (function initialize() {
   console.log('AI Content Exporter loaded');
 
-  // Butonu sayfaya ekle (DOM hazır olduğunda)
+  // Her AI mesajına butonları ekle
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', addFloatingButton);
+    document.addEventListener('DOMContentLoaded', () => {
+      addExportButtonsToAllMessages();
+      observeNewMessages();
+    });
   } else {
     // DOM zaten hazır
-    setTimeout(addFloatingButton, 1000);
+    setTimeout(() => {
+      addExportButtonsToAllMessages();
+      observeNewMessages();
+    }, 1000);
   }
 })();
 
-// Floating button ekle (hızlı erişim için)
-function addFloatingButton() {
-  // Eğer zaten varsa ekleme
-  if (document.getElementById('ai-exporter-btn')) {
-    return;
-  }
+// Tüm AI mesajlarına export butonları ekle
+function addExportButtonsToAllMessages() {
+  const platform = detectCurrentPlatform();
+  if (!platform) return;
 
-  // Body'nin hazır olduğunu kontrol et
-  if (!document.body) {
-    console.warn('AI Exporter: Body not ready, retrying...');
-    setTimeout(addFloatingButton, 500);
-    return;
-  }
+  const selectors = PLATFORM_SELECTORS[platform];
+  if (!selectors) return;
 
-  const button = document.createElement('div');
-  button.id = 'ai-exporter-btn';
-  button.innerHTML = `
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-    </svg>
-  `;
-  button.title = 'Temiz metin kopyala (AI Exporter)';
+  const messages = document.querySelectorAll(selectors.messages);
+  console.log(`AI Exporter: Found ${messages.length} messages`);
 
-  button.addEventListener('click', async () => {
-    const platform = detectCurrentPlatform();
-    const settings = await chrome.storage.sync.get({
-      preserveCodeBlocks: true,
-      preserveTables: true,
-      removeEmojis: false
-    });
-
-    const result = await handleCleanCopy(platform, settings);
-
-    if (result.success) {
-      button.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
-      button.innerHTML = '✓';
-      button.style.fontSize = '24px';
-      button.style.color = 'white';
-
-      setTimeout(() => {
-        button.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-        button.innerHTML = `
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-        `;
-      }, 1500);
-    } else {
-      // Hata durumunda
-      button.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
-      setTimeout(() => {
-        button.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-      }, 1500);
+  messages.forEach((message, index) => {
+    // Eğer zaten butonlar eklenmişse skip et
+    if (message.querySelector('.ai-export-buttons')) {
+      return;
     }
+
+    addExportButtonsToMessage(message);
+  });
+}
+
+// Tek bir mesaja export butonları ekle
+function addExportButtonsToMessage(messageElement) {
+  const buttonsContainer = document.createElement('div');
+  buttonsContainer.className = 'ai-export-buttons';
+  buttonsContainer.innerHTML = `
+    <button class="ai-export-btn" data-action="copy" title="Temiz metin kopyala">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+      <span>Copy</span>
+    </button>
+    <button class="ai-export-btn" data-action="txt" title="TXT olarak indir">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+      </svg>
+      <span>TXT</span>
+    </button>
+    <button class="ai-export-btn" data-action="docx" title="DOCX olarak indir">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+      </svg>
+      <span>DOCX</span>
+    </button>
+    <button class="ai-export-btn" data-action="pdf" title="PDF olarak indir">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+      </svg>
+      <span>PDF</span>
+    </button>
+  `;
+
+  // Event listeners
+  buttonsContainer.querySelectorAll('.ai-export-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const action = btn.dataset.action;
+      const content = messageElement.textContent || messageElement.innerText;
+
+      await handleExportAction(action, content, btn);
+    });
+  });
+
+  // Mesajın sonuna ekle
+  messageElement.appendChild(buttonsContainer);
+}
+
+// Export aksiyonunu handle et
+async function handleExportAction(action, content, buttonElement) {
+  const settings = await chrome.storage.sync.get({
+    preserveCodeBlocks: true,
+    preserveTables: true,
+    removeEmojis: false
   });
 
   try {
-    document.body.appendChild(button);
-    console.log('AI Exporter: Floating button added');
+    // Butonu loading state'e al
+    buttonElement.classList.add('loading');
+
+    switch (action) {
+      case 'copy':
+        const cleanText = cleanMarkdown(content, settings);
+        await copyToClipboard(cleanText);
+        showButtonSuccess(buttonElement, '✓');
+        break;
+
+      case 'txt':
+        const txtContent = cleanMarkdown(content, settings);
+        await downloadTxt(txtContent, settings);
+        showButtonSuccess(buttonElement, '✓');
+        break;
+
+      case 'docx':
+        const docxContent = settings.preserveCodeBlocks ? content : cleanMarkdown(content, settings);
+        await downloadDocx(docxContent, settings);
+        showButtonSuccess(buttonElement, '✓');
+        break;
+
+      case 'pdf':
+        const pdfContent = settings.preserveCodeBlocks ? content : cleanMarkdown(content, settings);
+        await downloadPdf(pdfContent, settings);
+        showButtonSuccess(buttonElement, '✓');
+        break;
+    }
   } catch (error) {
-    console.error('AI Exporter: Failed to add button', error);
+    console.error('Export failed:', error);
+    showButtonError(buttonElement);
   }
+}
+
+// Buton başarı feedback'i
+function showButtonSuccess(button, icon) {
+  button.classList.remove('loading');
+  button.classList.add('success');
+  const originalHTML = button.innerHTML;
+  button.innerHTML = icon;
+
+  setTimeout(() => {
+    button.classList.remove('success');
+    button.innerHTML = originalHTML;
+  }, 2000);
+}
+
+// Buton hata feedback'i
+function showButtonError(button) {
+  button.classList.remove('loading');
+  button.classList.add('error');
+
+  setTimeout(() => {
+    button.classList.remove('error');
+  }, 2000);
+}
+
+// Yeni mesajları izle (MutationObserver)
+function observeNewMessages() {
+  const platform = detectCurrentPlatform();
+  if (!platform) return;
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === 1) { // Element node
+          const selectors = PLATFORM_SELECTORS[platform];
+          if (!selectors) return;
+
+          // Yeni mesaj mı kontrol et
+          if (node.matches && node.matches(selectors.messages)) {
+            if (!node.querySelector('.ai-export-buttons')) {
+              addExportButtonsToMessage(node);
+            }
+          }
+
+          // Alt elementlerde yeni mesaj var mı kontrol et
+          const newMessages = node.querySelectorAll(selectors.messages);
+          newMessages.forEach(msg => {
+            if (!msg.querySelector('.ai-export-buttons')) {
+              addExportButtonsToMessage(msg);
+            }
+          });
+        }
+      });
+    });
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  console.log('AI Exporter: Observing new messages');
 }
 
 // Platform tespiti
