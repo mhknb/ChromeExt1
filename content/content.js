@@ -463,13 +463,46 @@ function addExportButtonsToMessage(messageElement, platform) {
 
       const action = btn.dataset.action;
 
-      // İçeriği al - butonları exclude et
+      // İçeriği al - sadece markdown içeriği
+      const platform = detectCurrentPlatform();
+      const selectors = PLATFORM_SELECTORS[platform];
+
       const contentElement = messageElement.cloneNode(true);
-      // Butonları clone'dan kaldır
+
+      // Butonları kaldır
       const buttons = contentElement.querySelector('.ai-export-buttons');
       if (buttons) buttons.remove();
 
-      const content = contentElement.textContent || contentElement.innerText;
+      // "ChatGPT said:" gibi başlıkları içeren elementleri kaldır
+      // ChatGPT'de genellikle bu header/label elementlerinde oluyor
+      const headers = contentElement.querySelectorAll('[data-message-author-role], .font-semibold, [class*="author"], header');
+      headers.forEach(header => {
+        const text = header.textContent || '';
+        if (text.match(/(ChatGPT|Claude|Gemini|DeepSeek)\s*(said|söyledi)?:?/i)) {
+          header.remove();
+        }
+      });
+
+      // Sadece content alanını al
+      let content;
+      const contentArea = contentElement.querySelector(selectors.content);
+      if (contentArea) {
+        // Matematiksel formülleri LaTeX formatında koru
+        const mathElements = contentArea.querySelectorAll('.katex, .math, annotation[encoding="application/x-tex"]');
+        mathElements.forEach(math => {
+          // LaTeX annotation'ı varsa kullan
+          const latex = math.querySelector('annotation[encoding="application/x-tex"]');
+          if (latex) {
+            const mathText = latex.textContent;
+            const placeholder = document.createTextNode(`$$${mathText}$$`);
+            math.parentNode.replaceChild(placeholder, math);
+          }
+        });
+
+        content = contentArea.textContent || contentArea.innerText;
+      } else {
+        content = contentElement.textContent || contentElement.innerText;
+      }
 
       await handleExportAction(action, content, btn);
     });
