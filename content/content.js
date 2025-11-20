@@ -3,8 +3,9 @@
 // Platform-specific selectors
 const PLATFORM_SELECTORS = {
   chatgpt: {
-    messages: '[data-message-author-role="assistant"]',
-    content: '.markdown',
+    // ChatGPT yeni arayüz (chatgpt.com) ve eski (chat.openai.com) destekler
+    messages: 'article[data-testid^="conversation-turn"], [data-message-author-role="assistant"], .agent-turn',
+    content: '.markdown, [class*="markdown"], .text-base',
     codeBlocks: 'pre code',
     tables: 'table'
   },
@@ -331,7 +332,7 @@ function addFloatingButton() {
 // Platform tespiti
 function detectCurrentPlatform() {
   const url = window.location.href;
-  if (url.includes('chat.openai.com')) return 'chatgpt';
+  if (url.includes('chat.openai.com') || url.includes('chatgpt.com')) return 'chatgpt';
   if (url.includes('claude.ai')) return 'claude';
   if (url.includes('gemini.google.com')) return 'gemini';
   if (url.includes('chat.deepseek.com')) return 'deepseek';

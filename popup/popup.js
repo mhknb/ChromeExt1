@@ -20,7 +20,7 @@ function detectPlatform(url) {
   const platformName = document.getElementById('platformName');
   const buttons = document.querySelectorAll('.action-btn');
 
-  if (url.includes('chat.openai.com')) {
+  if (url.includes('chat.openai.com') || url.includes('chatgpt.com')) {
     currentPlatform = 'chatgpt';
     platformName.textContent = 'ChatGPT tespit edildi';
     platformDot.classList.add('active');
