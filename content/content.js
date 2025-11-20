@@ -3,29 +3,34 @@
 // Platform-specific selectors
 const PLATFORM_SELECTORS = {
   chatgpt: {
-    // ChatGPT yeni arayüz (chatgpt.com) ve eski (chat.openai.com) destekler
-    messages: 'article[data-testid^="conversation-turn"], [data-message-author-role="assistant"], .agent-turn',
+    // ChatGPT - sadece en dış article container'ı seç (duplicate'leri önle)
+    messages: 'article[data-testid^="conversation-turn"]:has([data-message-author-role="assistant"])',
     content: '.markdown, [class*="markdown"], .text-base',
     codeBlocks: 'pre code',
-    tables: 'table'
+    tables: 'table',
+    // Butonların ekleneceği container
+    buttonContainer: '.agent-turn, [data-message-author-role="assistant"]'
   },
   claude: {
     messages: '[data-is-streaming="false"]',
     content: '.font-claude-message',
     codeBlocks: 'pre code',
-    tables: 'table'
+    tables: 'table',
+    buttonContainer: null // Mesajın kendisine ekle
   },
   gemini: {
     messages: '.model-response-text',
     content: '.markdown',
     codeBlocks: 'pre code',
-    tables: 'table'
+    tables: 'table',
+    buttonContainer: null
   },
   deepseek: {
     messages: '.message-content',
     content: '.markdown-body',
     codeBlocks: 'pre code',
-    tables: 'table'
+    tables: 'table',
+    buttonContainer: null
   }
 };
 
@@ -390,17 +395,33 @@ function addExportButtonsToAllMessages() {
   console.log(`AI Exporter: Found ${messages.length} messages`);
 
   messages.forEach((message, index) => {
-    // Eğer zaten butonlar eklenmişse skip et
-    if (message.querySelector('.ai-export-buttons')) {
+    // Eğer zaten butonlar eklenmişse skip et (data attribute ile kontrol)
+    if (message.hasAttribute('data-export-buttons-added')) {
       return;
     }
 
-    addExportButtonsToMessage(message);
+    addExportButtonsToMessage(message, platform);
   });
 }
 
 // Tek bir mesaja export butonları ekle
-function addExportButtonsToMessage(messageElement) {
+function addExportButtonsToMessage(messageElement, platform) {
+  // Duplicate check
+  if (messageElement.hasAttribute('data-export-buttons-added')) {
+    return;
+  }
+
+  const selectors = PLATFORM_SELECTORS[platform];
+
+  // Butonların ekleneceği container'ı bul
+  let targetContainer = messageElement;
+  if (selectors.buttonContainer) {
+    const foundContainer = messageElement.querySelector(selectors.buttonContainer);
+    if (foundContainer) {
+      targetContainer = foundContainer;
+    }
+  }
+
   const buttonsContainer = document.createElement('div');
   buttonsContainer.className = 'ai-export-buttons';
   buttonsContainer.innerHTML = `
@@ -447,8 +468,11 @@ function addExportButtonsToMessage(messageElement) {
     });
   });
 
-  // Mesajın sonuna ekle
-  messageElement.appendChild(buttonsContainer);
+  // Butonları ekle
+  targetContainer.appendChild(buttonsContainer);
+
+  // Duplicate eklemeyi önlemek için flag
+  messageElement.setAttribute('data-export-buttons-added', 'true');
 }
 
 // Export aksiyonunu handle et
@@ -522,25 +546,25 @@ function observeNewMessages() {
   const platform = detectCurrentPlatform();
   if (!platform) return;
 
+  const selectors = PLATFORM_SELECTORS[platform];
+  if (!selectors) return;
+
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
         if (node.nodeType === 1) { // Element node
-          const selectors = PLATFORM_SELECTORS[platform];
-          if (!selectors) return;
-
           // Yeni mesaj mı kontrol et
           if (node.matches && node.matches(selectors.messages)) {
-            if (!node.querySelector('.ai-export-buttons')) {
-              addExportButtonsToMessage(node);
+            if (!node.hasAttribute('data-export-buttons-added')) {
+              addExportButtonsToMessage(node, platform);
             }
           }
 
           // Alt elementlerde yeni mesaj var mı kontrol et
           const newMessages = node.querySelectorAll(selectors.messages);
           newMessages.forEach(msg => {
-            if (!msg.querySelector('.ai-export-buttons')) {
-              addExportButtonsToMessage(msg);
+            if (!msg.hasAttribute('data-export-buttons-added')) {
+              addExportButtonsToMessage(msg, platform);
             }
           });
         }
