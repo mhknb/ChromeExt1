@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Event listeners
   document.getElementById('cleanCopyBtn').addEventListener('click', handleCleanCopy);
+  document.getElementById('exportTxtBtn').addEventListener('click', handleExportTxt);
   document.getElementById('exportDocxBtn').addEventListener('click', handleExportDocx);
   document.getElementById('exportPdfBtn').addEventListener('click', handleExportPdf);
 
@@ -75,8 +76,33 @@ async function handleCleanCopy() {
   });
 }
 
+async function handleExportTxt() {
+  showStatus('TXT dosyası oluşturuluyor...', 'info');
+
+  const settings = await getSettings();
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  chrome.tabs.sendMessage(tab.id, {
+    action: 'exportTxt',
+    platform: currentPlatform,
+    settings: settings
+  }, (response) => {
+    if (chrome.runtime.lastError) {
+      showStatus('Hata: ' + chrome.runtime.lastError.message, 'error');
+      return;
+    }
+
+    if (response && response.success) {
+      showStatus('✓ TXT dosyası indirildi!', 'success');
+    } else {
+      showStatus('TXT oluşturulamadı', 'error');
+    }
+  });
+}
+
 async function handleExportDocx() {
-  showStatus('DOCX dosyası oluşturuluyor...', 'info');
+  showStatus('RTF dosyası oluşturuluyor...', 'info');
 
   const settings = await getSettings();
 
@@ -93,9 +119,9 @@ async function handleExportDocx() {
     }
 
     if (response && response.success) {
-      showStatus('✓ DOCX dosyası indirildi!', 'success');
+      showStatus('✓ RTF dosyası indirildi!', 'success');
     } else {
-      showStatus('DOCX oluşturulamadı', 'error');
+      showStatus('RTF oluşturulamadı', 'error');
     }
   });
 }
