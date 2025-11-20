@@ -101,12 +101,24 @@ function cleanMarkdown(text, settings) {
 
   let cleaned = text;
 
+  // Önce LaTeX formüllerini koru (placeholder ile değiştir)
+  const latexFormulas = [];
+  // Block math: $$...$$
+  cleaned = cleaned.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
+    const index = latexFormulas.length;
+    latexFormulas.push({ type: 'block', formula });
+    return `___LATEX_BLOCK_${index}___`;
+  });
+  // Inline math: $...$
+  cleaned = cleaned.replace(/\$([^\$\n]+?)\$/g, (match, formula) => {
+    const index = latexFormulas.length;
+    latexFormulas.push({ type: 'inline', formula });
+    return `___LATEX_INLINE_${index}___`;
+  });
+
   // 0. Platform-specific başlıkları temizle (ChatGPT said:, Claude said:, etc.)
-  // Satır başında veya metin başında temizle
   cleaned = cleaned.replace(/(^|\n)(ChatGPT|Claude|Gemini|DeepSeek)\s+(said|söyledi):\s*/gi, '$1');
   cleaned = cleaned.replace(/(^|\n)(ChatGPT|Claude|Gemini|DeepSeek)\s*(\n|$)/gi, '$1');
-
-  // Başta boşluklarla gelirse temizle
   cleaned = cleaned.replace(/^\s*(ChatGPT|Claude|Gemini|DeepSeek)\s+(said|söyledi):\s*/i, '');
 
   // 1. Markdown başlıkları temizle (###, ##, #)
@@ -139,6 +151,13 @@ function cleanMarkdown(text, settings) {
   // 8. Fazla boşlukları temizle
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
   cleaned = cleaned.trim();
+
+  // LaTeX formüllerini geri koy
+  latexFormulas.forEach((item, index) => {
+    const wrapper = item.type === 'block' ? '$$' : '$';
+    cleaned = cleaned.replace(`___LATEX_BLOCK_${index}___`, `${wrapper}${item.formula}${wrapper}`);
+    cleaned = cleaned.replace(`___LATEX_INLINE_${index}___`, `${wrapper}${item.formula}${wrapper}`);
+  });
 
   return cleaned;
 }
@@ -488,14 +507,18 @@ function addExportButtonsToMessage(messageElement, platform) {
       const contentArea = contentElement.querySelector(selectors.content);
       if (contentArea) {
         // Matematiksel formülleri LaTeX formatında koru
-        const mathElements = contentArea.querySelectorAll('.katex, .math, annotation[encoding="application/x-tex"]');
-        mathElements.forEach(math => {
-          // LaTeX annotation'ı varsa kullan
-          const latex = math.querySelector('annotation[encoding="application/x-tex"]');
-          if (latex) {
-            const mathText = latex.textContent;
-            const placeholder = document.createTextNode(`$$${mathText}$$`);
-            math.parentNode.replaceChild(placeholder, math);
+        // ChatGPT KaTeX annotation'larını bul
+        const latexAnnotations = contentArea.querySelectorAll('annotation[encoding="application/x-tex"]');
+        latexAnnotations.forEach(annotation => {
+          const latexCode = annotation.textContent;
+          // En dıştaki katex elementini bul
+          let katexElement = annotation.closest('.katex');
+          if (katexElement) {
+            // Inline mi block mi kontrol et
+            const isBlock = katexElement.classList.contains('katex-display');
+            const wrapper = isBlock ? '$$' : '$';
+            const textNode = document.createTextNode(`${wrapper}${latexCode}${wrapper}`);
+            katexElement.parentNode.replaceChild(textNode, katexElement);
           }
         });
 
