@@ -184,17 +184,16 @@ async function handleExportPdf(platform, settings) {
 
 // DOCX dosyası oluştur ve indir
 async function downloadDocx(content, settings) {
-  // RTF formatı kullanıyoruz - Word tarafından desteklenir
-  const rtfContent = createRtfContent(content, settings);
-  const blob = new Blob([rtfContent], {
-    type: 'application/rtf'
+  // HTML-based DOCX - Word tarafından sorunsuz açılır
+  const docxHtml = createDocxHtml(content, settings);
+  const blob = new Blob([docxHtml], {
+    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   });
 
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  // .docx yerine .rtf uzantısı - Word açabilir
-  a.download = `ai-export-${Date.now()}.rtf`;
+  a.download = `ai-export-${Date.now()}.docx`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -216,24 +215,43 @@ async function downloadPdf(content, settings) {
   }, 500);
 }
 
-// RTF içerik oluştur (Word tarafından açılabilir)
-function createRtfContent(content, settings) {
-  // RTF formatı - Word tarafından desteklenir
-  const rtfHeader = `{\\rtf1\\ansi\\ansicpg1252\\deff0\\nouicompat\\deflang1033
-{\\fonttbl{\\f0\\fnil\\fcharset0 Calibri;}{\\f1\\fnil\\fcharset2 Symbol;}}
-{\\colortbl;\\red0\\green0\\blue0;}
-{\\*\\generator AI Content Exporter}
-\\viewkind4\\uc1\\pard\\sa200\\sl276\\slmult1\\f0\\fs22 `;
+// HTML-based DOCX oluştur (Word tarafından açılabilir)
+function createDocxHtml(content, settings) {
+  // Word tarafından desteklenen HTML formatı
+  // MIME type DOCX olarak ayarlandığında Word bunu DOCX gibi açar
 
-  // Özel karakterleri escape et
-  let rtfContent = content
-    .replace(/\\/g, '\\\\')  // \ karakterini escape et
-    .replace(/{/g, '\\{')    // { karakterini escape et
-    .replace(/}/g, '\\}')    // } karakterini escape et
-    .replace(/\n\n/g, '\\par\\par ')  // Paragraf ayırıcı
-    .replace(/\n/g, '\\par ');  // Satır sonu
+  // İçeriği paragraf olarak böl ve HTML'e çevir
+  const paragraphs = content.split('\n').map(line => {
+    if (!line.trim()) {
+      return '<p style="margin: 0;"><span style="font-size: 11pt; font-family: Calibri, sans-serif;">&nbsp;</span></p>';
+    }
+    const escapedLine = line
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
 
-  return rtfHeader + rtfContent + '\\par}';
+    return `<p style="margin: 0; margin-bottom: 10pt;"><span style="font-size: 11pt; font-family: Calibri, sans-serif;">${escapedLine}</span></p>`;
+  }).join('\n');
+
+  return `<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>
+<head>
+  <meta charset='utf-8'>
+  <title>AI Export</title>
+  <style>
+    @page WordSection1 { size: 8.5in 11.0in; margin: 1.0in; }
+    div.WordSection1 { page: WordSection1; }
+    body { font-family: Calibri, sans-serif; font-size: 11pt; }
+    p { margin: 0; margin-bottom: 10pt; }
+  </style>
+</head>
+<body>
+  <div class="WordSection1">
+${paragraphs}
+  </div>
+</body>
+</html>`;
 }
 
 // PDF için HTML içerik oluştur
