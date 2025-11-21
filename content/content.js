@@ -13,95 +13,134 @@ function normalizeLatexForWord(markdown) {
   console.log('[Normalize] Input has $ signs:', result.includes('$'));
   console.log('[Normalize] Input sample:', result.substring(0, 300));
 
-  // STEP 1: Convert Unicode math symbols to LaTeX
-  // ONLY when annotation extraction failed and we have Unicode instead of LaTeX
-  result = result
-    // Comparison operators
-    .replace(/≤/g, '\\leq')
-    .replace(/≥/g, '\\geq')
-    .replace(/≠/g, '\\neq')
-    .replace(/≈/g, '\\approx')
-    .replace(/≡/g, '\\equiv')
+  // STEP 1: Convert Unicode math symbols to LaTeX WITH inline math delimiters
+  // This handles cases where annotation extraction failed
 
-    // Set operations
-    .replace(/⊆/g, '\\subseteq')
-    .replace(/⊇/g, '\\supseteq')
-    .replace(/⊂/g, '\\subset')
-    .replace(/⊃/g, '\\supset')
-    .replace(/∈/g, '\\in')
-    .replace(/∉/g, '\\notin')
-    .replace(/∪/g, '\\cup')
-    .replace(/∩/g, '\\cap')
-    .replace(/∅/g, '\\emptyset')
+  // Helper function to wrap symbol in $...$ if not already in math mode
+  function wrapInMath(text, unicodeSymbol, latexCommand) {
+    return text.replace(new RegExp(unicodeSymbol, 'g'), (match, offset) => {
+      // Check if already inside $...$ or $$...$$
+      const before = text.substring(0, offset);
+      const after = text.substring(offset);
 
-    // Arithmetic
-    .replace(/×/g, '\\times')
-    .replace(/÷/g, '\\div')
-    .replace(/±/g, '\\pm')
-    .replace(/∓/g, '\\mp')
+      // Count $ signs before this position
+      const dollarsBefore = (before.match(/\$/g) || []).length;
 
-    // Calculus & Analysis
-    .replace(/∞/g, '\\infty')
-    .replace(/∫/g, '\\int')
-    .replace(/∑/g, '\\sum')
-    .replace(/∏/g, '\\prod')
-    .replace(/√/g, '\\sqrt')
-    .replace(/∂/g, '\\partial')
-    .replace(/∇/g, '\\nabla')
+      // If odd number of $ before, we're inside math mode - don't wrap
+      if (dollarsBefore % 2 === 1) {
+        return latexCommand;
+      }
 
-    // Greek letters (lowercase)
-    .replace(/α/g, '\\alpha')
-    .replace(/β/g, '\\beta')
-    .replace(/γ/g, '\\gamma')
-    .replace(/δ/g, '\\delta')
-    .replace(/ε/g, '\\epsilon')
-    .replace(/ζ/g, '\\zeta')
-    .replace(/η/g, '\\eta')
-    .replace(/θ/g, '\\theta')
-    .replace(/ι/g, '\\iota')
-    .replace(/κ/g, '\\kappa')
-    .replace(/λ/g, '\\lambda')
-    .replace(/μ/g, '\\mu')
-    .replace(/ν/g, '\\nu')
-    .replace(/ξ/g, '\\xi')
-    .replace(/π/g, '\\pi')
-    .replace(/ρ/g, '\\rho')
-    .replace(/σ/g, '\\sigma')
-    .replace(/τ/g, '\\tau')
-    .replace(/υ/g, '\\upsilon')
-    .replace(/φ/g, '\\phi')
-    .replace(/χ/g, '\\chi')
-    .replace(/ψ/g, '\\psi')
-    .replace(/ω/g, '\\omega')
+      // Check if inside $$...$$ block
+      const blockStart = before.lastIndexOf('$$');
+      const blockEnd = after.indexOf('$$');
+      if (blockStart !== -1 && blockEnd !== -1 && blockStart > before.lastIndexOf('$$', blockStart - 1)) {
+        return latexCommand;
+      }
 
-    // Greek letters (uppercase)
-    .replace(/Γ/g, '\\Gamma')
-    .replace(/Δ/g, '\\Delta')
-    .replace(/Θ/g, '\\Theta')
-    .replace(/Λ/g, '\\Lambda')
-    .replace(/Ξ/g, '\\Xi')
-    .replace(/Π/g, '\\Pi')
-    .replace(/Σ/g, '\\Sigma')
-    .replace(/Φ/g, '\\Phi')
-    .replace(/Ψ/g, '\\Psi')
-    .replace(/Ω/g, '\\Omega')
+      // Not in math mode - wrap with $...$
+      return '$' + latexCommand + '$';
+    });
+  }
 
-    // Logic
-    .replace(/∀/g, '\\forall')
-    .replace(/∃/g, '\\exists')
-    .replace(/¬/g, '\\neg')
-    .replace(/∧/g, '\\wedge')
-    .replace(/∨/g, '\\vee')
-    .replace(/⇒/g, '\\Rightarrow')
-    .replace(/⇔/g, '\\Leftrightarrow')
-    .replace(/→/g, '\\rightarrow')
-    .replace(/←/g, '\\leftarrow');
+  // Comparison operators
+  result = wrapInMath(result, '≤', '\\leq');
+  result = wrapInMath(result, '≥', '\\geq');
+  result = wrapInMath(result, '≠', '\\neq');
+  result = wrapInMath(result, '≈', '\\approx');
+  result = wrapInMath(result, '≡', '\\equiv');
+
+  // Set operations
+  result = wrapInMath(result, '⊆', '\\subseteq');
+  result = wrapInMath(result, '⊇', '\\supseteq');
+  result = wrapInMath(result, '⊂', '\\subset');
+  result = wrapInMath(result, '⊃', '\\supset');
+  result = wrapInMath(result, '∈', '\\in');
+  result = wrapInMath(result, '∉', '\\notin');
+  result = wrapInMath(result, '∪', '\\cup');
+  result = wrapInMath(result, '∩', '\\cap');
+  result = wrapInMath(result, '∅', '\\emptyset');
+
+  // Arithmetic
+  result = wrapInMath(result, '×', '\\times');
+  result = wrapInMath(result, '÷', '\\div');
+  result = wrapInMath(result, '±', '\\pm');
+  result = wrapInMath(result, '∓', '\\mp');
+
+  // Calculus & Analysis
+  result = wrapInMath(result, '∞', '\\infty');
+  result = wrapInMath(result, '∫', '\\int');
+  result = wrapInMath(result, '∑', '\\sum');
+  result = wrapInMath(result, '∏', '\\prod');
+  result = wrapInMath(result, '√', '\\sqrt');
+  result = wrapInMath(result, '∂', '\\partial');
+  result = wrapInMath(result, '∇', '\\nabla');
+
+  // Greek letters (lowercase)
+  result = wrapInMath(result, 'α', '\\alpha');
+  result = wrapInMath(result, 'β', '\\beta');
+  result = wrapInMath(result, 'γ', '\\gamma');
+  result = wrapInMath(result, 'δ', '\\delta');
+  result = wrapInMath(result, 'ε', '\\epsilon');
+  result = wrapInMath(result, 'ζ', '\\zeta');
+  result = wrapInMath(result, 'η', '\\eta');
+  result = wrapInMath(result, 'θ', '\\theta');
+  result = wrapInMath(result, 'ι', '\\iota');
+  result = wrapInMath(result, 'κ', '\\kappa');
+  result = wrapInMath(result, 'λ', '\\lambda');
+  result = wrapInMath(result, 'μ', '\\mu');
+  result = wrapInMath(result, 'ν', '\\nu');
+  result = wrapInMath(result, 'ξ', '\\xi');
+  result = wrapInMath(result, 'π', '\\pi');
+  result = wrapInMath(result, 'ρ', '\\rho');
+  result = wrapInMath(result, 'σ', '\\sigma');
+  result = wrapInMath(result, 'τ', '\\tau');
+  result = wrapInMath(result, 'υ', '\\upsilon');
+  result = wrapInMath(result, 'φ', '\\phi');
+  result = wrapInMath(result, 'χ', '\\chi');
+  result = wrapInMath(result, 'ψ', '\\psi');
+  result = wrapInMath(result, 'ω', '\\omega');
+
+  // Greek letters (uppercase)
+  result = wrapInMath(result, 'Γ', '\\Gamma');
+  result = wrapInMath(result, 'Δ', '\\Delta');
+  result = wrapInMath(result, 'Θ', '\\Theta');
+  result = wrapInMath(result, 'Λ', '\\Lambda');
+  result = wrapInMath(result, 'Ξ', '\\Xi');
+  result = wrapInMath(result, 'Π', '\\Pi');
+  result = wrapInMath(result, 'Σ', '\\Sigma');
+  result = wrapInMath(result, 'Φ', '\\Phi');
+  result = wrapInMath(result, 'Ψ', '\\Psi');
+  result = wrapInMath(result, 'Ω', '\\Omega');
+
+  // Logic
+  result = wrapInMath(result, '∀', '\\forall');
+  result = wrapInMath(result, '∃', '\\exists');
+  result = wrapInMath(result, '¬', '\\neg');
+  result = wrapInMath(result, '∧', '\\wedge');
+  result = wrapInMath(result, '∨', '\\vee');
+  result = wrapInMath(result, '⇒', '\\Rightarrow');
+  result = wrapInMath(result, '⇔', '\\Leftrightarrow');
+  result = wrapInMath(result, '→', '\\rightarrow');
+  result = wrapInMath(result, '←', '\\leftarrow');
 
   // STEP 2: Normalize LaTeX short forms to long forms (Word compatibility)
-  // Only do this for comparison operators where Word prefers long form
-  result = result
-    .replace(/\\le\b/g, '\\leq')
-    .replace(/\\ge\b/g, '\\geq');
+  // Only do this INSIDE math mode
+  result = result.replace(/\$([^$]+)\$/g, (match, mathContent) => {
+    // Normalize inside inline math
+    const normalized = mathContent
+      .replace(/\\le\b/g, '\\leq')
+      .replace(/\\ge\b/g, '\\geq');
+    return '$' + normalized + '$';
+  });
+
+  result = result.replace(/\$\$([^$]+)\$\$/g, (match, mathContent) => {
+    // Normalize inside block math
+    const normalized = mathContent
+      .replace(/\\le\b/g, '\\leq')
+      .replace(/\\ge\b/g, '\\geq');
+    return '$$' + normalized + '$$';
+  });
 
   console.log('[Normalize] Output sample:', result.substring(0, 300));
   return result;
