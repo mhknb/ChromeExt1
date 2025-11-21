@@ -91,7 +91,16 @@ module.exports = [
     },
     optimization: {
       splitChunks: false,
-      runtimeChunk: false
+      runtimeChunk: false,
+      minimize: true,
+      usedExports: false,
+      sideEffects: false,
+      concatenateModules: true
+    },
+    performance: {
+      hints: false,
+      maxEntrypointSize: 512000,
+      maxAssetSize: 512000
     }
   }
 ];

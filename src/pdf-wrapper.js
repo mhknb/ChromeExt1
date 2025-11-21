@@ -1,10 +1,11 @@
 /**
  * PDF Converter Wrapper for Content Script
- * Bundles katex, html2pdf.js, and marked for browser use
+ * Bundles katex, jspdf, html2canvas, and marked for browser use
  */
 
 import katex from 'katex';
-import html2pdf from 'html2pdf.js';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { marked } from 'marked';
 import 'katex/dist/katex.min.css';
 
@@ -61,7 +62,7 @@ class PdfConverterBundled {
   }
 
   /**
-   * Export content as PDF using html2pdf.js
+   * Export content as PDF using jsPDF + html2canvas
    * @param {string} markdown - Markdown content with LaTeX formulas
    * @returns {Promise<void>}
    */
@@ -80,13 +81,16 @@ class PdfConverterBundled {
 
       // Apply comprehensive styles
       element.style.cssText = `
-        padding: 30px;
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 210mm;
+        padding: 15mm;
         font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
         font-size: 12pt;
         line-height: 1.8;
         color: #333;
         background: white;
-        max-width: 100%;
         box-sizing: border-box;
       `;
 
@@ -200,7 +204,6 @@ class PdfConverterBundled {
           border-top: 2px solid #ddd;
           margin: 20px 0;
         }
-        /* KaTeX styling overrides for better PDF rendering */
         #pdf-export-content .katex {
           font-size: 1.1em;
         }
@@ -210,36 +213,56 @@ class PdfConverterBundled {
       `;
 
       document.head.appendChild(styleEl);
+      document.body.appendChild(element);
 
-      // Step 4: Configure html2pdf options
-      const options = {
-        margin: [15, 15, 15, 15],
-        filename: `chatgpt-export-${new Date().toISOString().split('T')[0]}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          allowTaint: true,
-          letterRendering: true,
-        },
-        jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'portrait',
-          compress: true,
-        },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      };
+      console.log('[PDF] Rendering HTML to canvas');
 
-      console.log('[PDF] Starting html2pdf conversion');
+      // Step 4: Convert HTML to canvas
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+      });
 
-      // Step 5: Generate and download PDF
-      await html2pdf().set(options).from(element).save();
+      console.log('[PDF] Canvas created, generating PDF');
+
+      // Step 5: Create PDF from canvas
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true,
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, '', 'FAST');
+      heightLeft -= pageHeight;
+
+      // Add remaining pages if content is longer than one page
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, '', 'FAST');
+        heightLeft -= pageHeight;
+      }
+
+      // Step 6: Save PDF
+      const filename = `chatgpt-export-${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(filename);
 
       console.log('[PDF] PDF generated successfully');
 
-      // Step 6: Cleanup
+      // Step 7: Cleanup
+      document.body.removeChild(element);
       document.head.removeChild(styleEl);
 
     } catch (error) {

@@ -35,7 +35,7 @@
       "js": [
         "lib/docx-converter-bundled.js",
         "lib/661.pdf-converter-bundled.js",
-        "lib/418.pdf-converter-bundled.js",
+        "lib/785.pdf-converter-bundled.js",
         "lib/pdf-converter-bundled.js",
         "content/content.js"
       ],
