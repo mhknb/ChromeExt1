@@ -21,14 +21,14 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: rgba(0, 0, 0, 0.6);
+  color: #5d5bc9;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .ai-export-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: rgba(0, 0, 0, 0.9);
+  background: rgba(93, 91, 201, 0.1);
+  color: #4a48b0;
 }
 
 .ai-export-btn:active {
@@ -42,12 +42,12 @@
 /* Dark mode button styles */
 @media (prefers-color-scheme: dark) {
   .ai-export-btn {
-    color: rgba(255, 255, 255, 0.7);
+    color: #8987e8;
   }
 
   .ai-export-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.95);
+    background: rgba(137, 135, 232, 0.15);
+    color: #a7a5ff;
   }
 }
 
