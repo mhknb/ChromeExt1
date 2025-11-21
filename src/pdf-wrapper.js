@@ -97,10 +97,25 @@ class PdfConverterBundled {
 
       // Helper function to process inline LaTeX and formatting
       const processInlineText = (text) => {
-        // Replace inline math $...$ with placeholder
-        return text.replace(/\$([^$\n]+)\$/g, (match, latex) => {
+        if (!text) return '';
+
+        // First, replace inline math $...$ with placeholder
+        text = text.replace(/\$([^$\n]+)\$/g, (match, latex) => {
           return `[${latex}]`; // Show formula in brackets
         });
+
+        // Remove markdown formatting but keep the text
+        text = text.replace(/\*\*\*(.+?)\*\*\*/g, '$1'); // Bold italic
+        text = text.replace(/\*\*(.+?)\*\*/g, '$1'); // Bold
+        text = text.replace(/\*(.+?)\*/g, '$1'); // Italic
+        text = text.replace(/___(.+?)___/g, '$1'); // Bold italic
+        text = text.replace(/__(.+?)__/g, '$1'); // Bold
+        text = text.replace(/_(.+?)_/g, '$1'); // Italic
+        text = text.replace(/~~(.+?)~~/g, '$1'); // Strikethrough
+        text = text.replace(/`([^`]+)`/g, '$1'); // Inline code
+        text = text.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1'); // Links [text](url) → text
+
+        return text;
       };
 
       // Step 1: Process LaTeX formulas first
@@ -116,6 +131,21 @@ class PdfConverterBundled {
       const tokens = marked.lexer(processedMarkdown);
       console.log('[PDF] Found', tokens.length, 'tokens');
 
+      // Helper to extract plain text from tokens
+      const extractText = (token) => {
+        if (typeof token === 'string') return token;
+
+        // If token has text property, use it
+        if (token.text) return processInlineText(token.text);
+
+        // If token has tokens (nested), recursively extract
+        if (token.tokens && Array.isArray(token.tokens)) {
+          return token.tokens.map(t => extractText(t)).join('');
+        }
+
+        return '';
+      };
+
       // Step 3: Render each token
       for (const token of tokens) {
         switch (token.type) {
@@ -128,7 +158,7 @@ class PdfConverterBundled {
             pdf.setFontSize(headingSizes[token.depth] || 12);
             pdf.setFont('helvetica', 'bold');
 
-            const headingText = processInlineText(token.text);
+            const headingText = extractText(token);
             const headingLines = pdf.splitTextToSize(headingText, contentWidth);
             pdf.text(headingLines, margin, yPosition);
             yPosition += headingLines.length * 7;
@@ -140,7 +170,7 @@ class PdfConverterBundled {
             pdf.setFontSize(11);
             pdf.setFont('helvetica', 'normal');
 
-            const paraText = processInlineText(token.text);
+            const paraText = extractText(token);
             const paraLines = pdf.splitTextToSize(paraText, contentWidth);
             pdf.text(paraLines, margin, yPosition);
             yPosition += paraLines.length * 5;
@@ -180,7 +210,7 @@ class PdfConverterBundled {
             for (let i = 0; i < token.items.length; i++) {
               const item = token.items[i];
               const bullet = token.ordered ? `${i + 1}. ` : '• ';
-              const itemText = processInlineText(item.text);
+              const itemText = extractText(item);
               const itemLines = pdf.splitTextToSize(bullet + itemText, contentWidth - 5);
 
               checkNewPage(itemLines.length * 5);
@@ -196,7 +226,7 @@ class PdfConverterBundled {
             pdf.setFont('helvetica', 'italic');
             pdf.setTextColor(85, 85, 85);
 
-            const quoteText = processInlineText(token.text);
+            const quoteText = extractText(token);
             const quoteLines = pdf.splitTextToSize(quoteText, contentWidth - 8);
 
             // Draw left border
