@@ -783,23 +783,23 @@ function addExportButtonsToMessage(messageElement, platform) {
         // Clone content area to avoid modifying original
         const contentClone = contentArea.cloneNode(true);
 
-        // Remove ALL button containers and action elements (ours and other extensions)
-        const buttonsToRemove = contentClone.querySelectorAll(
-          '.ai-export-buttons, ' +           // Our buttons
-          'button, ' +                        // All buttons
-          '[role="button"], ' +               // Button-like elements
-          '.flex.gap-1, ' +                   // ChatGPT's button container
-          '.flex.items-center.gap-1, ' +      // Another button container pattern
-          '[class*="button"], ' +             // Any class with "button"
-          '[class*="action"], ' +             // Any class with "action"
-          'svg:only-child'                    // Standalone icons
-        );
+        // Remove only OUR export buttons - be very specific
+        const ourButtons = contentClone.querySelectorAll('.ai-export-buttons');
+        ourButtons.forEach(btn => btn.remove());
 
-        buttonsToRemove.forEach(btn => {
-          // Only remove if it's not inside the actual message content
-          const parent = btn.parentElement;
-          if (parent && !parent.closest('p, li, blockquote, pre, code')) {
-            btn.remove();
+        // Remove other extension buttons that are direct children or in obvious button containers
+        // Look for button containers at the TOP level (not nested in content)
+        const topLevelButtons = contentClone.querySelectorAll(':scope > button, :scope > [role="button"], :scope > .flex > button');
+        topLevelButtons.forEach(btn => btn.remove());
+
+        // Remove button containers that are siblings to content, not children
+        const buttonContainers = contentClone.querySelectorAll(':scope > .flex.gap-1:has(button), :scope > .flex.items-center:has(button)');
+        buttonContainers.forEach(container => {
+          // Only remove if it ONLY contains buttons/icons (no text content)
+          const textContent = container.textContent.trim();
+          const hasButtons = container.querySelectorAll('button, svg').length > 0;
+          if (hasButtons && textContent.length < 10) {
+            container.remove();
           }
         });
 
