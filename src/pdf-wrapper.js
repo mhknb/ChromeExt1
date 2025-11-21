@@ -6,6 +6,7 @@
 import katex from 'katex';
 import { jsPDF } from 'jspdf';
 import { marked } from 'marked';
+import { robotoBase64 } from './fonts/roboto-font.js';
 import 'katex/dist/katex.min.css';
 
 class PdfConverterBundled {
@@ -77,6 +78,12 @@ class PdfConverterBundled {
         format: 'a4',
         compress: true,
       });
+
+      // Add Roboto font for Turkish character support
+      pdf.addFileToVFS('Roboto-Regular.ttf', robotoBase64);
+      pdf.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+      pdf.addFont('Roboto-Regular.ttf', 'Roboto', 'bold'); // Use same file for bold (jsPDF will fake it)
+      pdf.setFont('Roboto');
 
       // Page settings
       const pageWidth = 210; // A4 width in mm
@@ -156,7 +163,7 @@ class PdfConverterBundled {
             // Set font size based on heading level
             const headingSizes = { 1: 18, 2: 14, 3: 12, 4: 11, 5: 10, 6: 10 };
             pdf.setFontSize(headingSizes[token.depth] || 12);
-            pdf.setFont('helvetica', 'bold');
+            pdf.setFont('Roboto', 'bold');
 
             const headingText = extractText(token);
             const headingLines = pdf.splitTextToSize(headingText, contentWidth);
@@ -168,7 +175,7 @@ class PdfConverterBundled {
           case 'paragraph':
             checkNewPage(10);
             pdf.setFontSize(11);
-            pdf.setFont('helvetica', 'normal');
+            pdf.setFont('Roboto', 'normal');
 
             const paraText = extractText(token);
             const paraLines = pdf.splitTextToSize(paraText, contentWidth);
@@ -205,7 +212,7 @@ class PdfConverterBundled {
           case 'list':
             checkNewPage(10);
             pdf.setFontSize(11);
-            pdf.setFont('helvetica', 'normal');
+            pdf.setFont('Roboto', 'normal');
 
             for (let i = 0; i < token.items.length; i++) {
               const item = token.items[i];
@@ -223,7 +230,7 @@ class PdfConverterBundled {
           case 'blockquote':
             checkNewPage(10);
             pdf.setFontSize(11);
-            pdf.setFont('helvetica', 'italic');
+            pdf.setFont('Roboto', 'normal'); // Use normal instead of italic for better Unicode support
             pdf.setTextColor(85, 85, 85);
 
             const quoteText = extractText(token);
