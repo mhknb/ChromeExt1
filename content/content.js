@@ -1,5 +1,220 @@
 // Content Script - AI platformlarında çalışan ana script
 
+/**
+ * Normalize LaTeX for better Word compatibility
+ * Converts Unicode math symbols to LaTeX and normalizes short-form commands
+ * @param {string} markdown - Markdown with LaTeX
+ * @returns {string} - Normalized markdown
+ */
+function normalizeLatexForWord(markdown) {
+  let result = markdown;
+
+  // Debug: Check input
+  console.log('[Normalize] Input has $ signs:', result.includes('$'));
+  console.log('[Normalize] Input sample:', result.substring(0, 300));
+
+  // STEP 1: Convert Unicode math symbols to LaTeX
+  // ONLY when annotation extraction failed and we have Unicode instead of LaTeX
+  result = result
+    // Comparison operators
+    .replace(/≤/g, '\\leq')
+    .replace(/≥/g, '\\geq')
+    .replace(/≠/g, '\\neq')
+    .replace(/≈/g, '\\approx')
+    .replace(/≡/g, '\\equiv')
+
+    // Set operations
+    .replace(/⊆/g, '\\subseteq')
+    .replace(/⊇/g, '\\supseteq')
+    .replace(/⊂/g, '\\subset')
+    .replace(/⊃/g, '\\supset')
+    .replace(/∈/g, '\\in')
+    .replace(/∉/g, '\\notin')
+    .replace(/∪/g, '\\cup')
+    .replace(/∩/g, '\\cap')
+    .replace(/∅/g, '\\emptyset')
+
+    // Arithmetic
+    .replace(/×/g, '\\times')
+    .replace(/÷/g, '\\div')
+    .replace(/±/g, '\\pm')
+    .replace(/∓/g, '\\mp')
+
+    // Calculus & Analysis
+    .replace(/∞/g, '\\infty')
+    .replace(/∫/g, '\\int')
+    .replace(/∑/g, '\\sum')
+    .replace(/∏/g, '\\prod')
+    .replace(/√/g, '\\sqrt')
+    .replace(/∂/g, '\\partial')
+    .replace(/∇/g, '\\nabla')
+
+    // Greek letters (lowercase)
+    .replace(/α/g, '\\alpha')
+    .replace(/β/g, '\\beta')
+    .replace(/γ/g, '\\gamma')
+    .replace(/δ/g, '\\delta')
+    .replace(/ε/g, '\\epsilon')
+    .replace(/ζ/g, '\\zeta')
+    .replace(/η/g, '\\eta')
+    .replace(/θ/g, '\\theta')
+    .replace(/ι/g, '\\iota')
+    .replace(/κ/g, '\\kappa')
+    .replace(/λ/g, '\\lambda')
+    .replace(/μ/g, '\\mu')
+    .replace(/ν/g, '\\nu')
+    .replace(/ξ/g, '\\xi')
+    .replace(/π/g, '\\pi')
+    .replace(/ρ/g, '\\rho')
+    .replace(/σ/g, '\\sigma')
+    .replace(/τ/g, '\\tau')
+    .replace(/υ/g, '\\upsilon')
+    .replace(/φ/g, '\\phi')
+    .replace(/χ/g, '\\chi')
+    .replace(/ψ/g, '\\psi')
+    .replace(/ω/g, '\\omega')
+
+    // Greek letters (uppercase)
+    .replace(/Γ/g, '\\Gamma')
+    .replace(/Δ/g, '\\Delta')
+    .replace(/Θ/g, '\\Theta')
+    .replace(/Λ/g, '\\Lambda')
+    .replace(/Ξ/g, '\\Xi')
+    .replace(/Π/g, '\\Pi')
+    .replace(/Σ/g, '\\Sigma')
+    .replace(/Φ/g, '\\Phi')
+    .replace(/Ψ/g, '\\Psi')
+    .replace(/Ω/g, '\\Omega')
+
+    // Logic
+    .replace(/∀/g, '\\forall')
+    .replace(/∃/g, '\\exists')
+    .replace(/¬/g, '\\neg')
+    .replace(/∧/g, '\\wedge')
+    .replace(/∨/g, '\\vee')
+    .replace(/⇒/g, '\\Rightarrow')
+    .replace(/⇔/g, '\\Leftrightarrow')
+    .replace(/→/g, '\\rightarrow')
+    .replace(/←/g, '\\leftarrow');
+
+  // STEP 2: Normalize LaTeX short forms to long forms (Word compatibility)
+  // Only do this for comparison operators where Word prefers long form
+  result = result
+    .replace(/\\le\b/g, '\\leq')
+    .replace(/\\ge\b/g, '\\geq');
+
+  console.log('[Normalize] Output sample:', result.substring(0, 300));
+  return result;
+}
+
+/**
+ * Convert HTML element to Markdown
+ * @param {HTMLElement} element - HTML element to convert
+ * @returns {string} - Markdown string
+ */
+function htmlToMarkdown(element) {
+  let markdown = '';
+
+  // Process each child node
+  for (const node of element.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      markdown += node.textContent;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const tag = node.tagName.toLowerCase();
+
+      switch (tag) {
+        case 'h1':
+          markdown += `\n# ${node.textContent}\n\n`;
+          break;
+        case 'h2':
+          markdown += `\n## ${node.textContent}\n\n`;
+          break;
+        case 'h3':
+          markdown += `\n### ${node.textContent}\n\n`;
+          break;
+        case 'h4':
+          markdown += `\n#### ${node.textContent}\n\n`;
+          break;
+        case 'h5':
+          markdown += `\n##### ${node.textContent}\n\n`;
+          break;
+        case 'h6':
+          markdown += `\n###### ${node.textContent}\n\n`;
+          break;
+        case 'p':
+          markdown += htmlToMarkdown(node) + '\n\n';
+          break;
+        case 'strong':
+        case 'b':
+          markdown += `**${node.textContent}**`;
+          break;
+        case 'em':
+        case 'i':
+          markdown += `*${node.textContent}*`;
+          break;
+        case 'code':
+          // Check if inside pre (code block) or inline code
+          if (node.parentElement && node.parentElement.tagName === 'PRE') {
+            const language = node.className.replace('language-', '');
+            markdown += `\`\`\`${language}\n${node.textContent}\n\`\`\`\n\n`;
+          } else {
+            markdown += `\`${node.textContent}\``;
+          }
+          break;
+        case 'pre':
+          const codeElement = node.querySelector('code');
+          if (codeElement) {
+            const language = codeElement.className.replace('language-', '');
+            markdown += `\`\`\`${language}\n${codeElement.textContent}\n\`\`\`\n\n`;
+          } else {
+            markdown += `\`\`\`\n${node.textContent}\n\`\`\`\n\n`;
+          }
+          break;
+        case 'ul':
+          for (const li of node.querySelectorAll('li')) {
+            markdown += `- ${li.textContent}\n`;
+          }
+          markdown += '\n';
+          break;
+        case 'ol':
+          let index = 1;
+          for (const li of node.querySelectorAll('li')) {
+            markdown += `${index}. ${li.textContent}\n`;
+            index++;
+          }
+          markdown += '\n';
+          break;
+        case 'li':
+          // Handled by ul/ol
+          break;
+        case 'a':
+          const href = node.getAttribute('href') || '';
+          markdown += `[${node.textContent}](${href})`;
+          break;
+        case 'br':
+          markdown += '\n';
+          break;
+        case 'hr':
+          markdown += '\n---\n\n';
+          break;
+        case 'blockquote':
+          const lines = node.textContent.split('\n');
+          markdown += lines.map(line => `> ${line}`).join('\n') + '\n\n';
+          break;
+        case 'table':
+          // Basic table support - can be enhanced
+          markdown += '\n' + node.outerHTML + '\n\n'; // Keep as HTML for now
+          break;
+        default:
+          // Recursively process other elements
+          markdown += htmlToMarkdown(node);
+      }
+    }
+  }
+
+  return markdown;
+}
+
 // Platform-specific selectors
 const PLATFORM_SELECTORS = {
   chatgpt: {
@@ -502,30 +717,69 @@ function addExportButtonsToMessage(messageElement, platform) {
         }
       });
 
-      // Sadece content alanını al
+      // Sadece content alanını al ve HTML'i Markdown'a çevir
       let content;
       const contentArea = contentElement.querySelector(selectors.content);
       if (contentArea) {
         // Matematiksel formülleri LaTeX formatında koru
-        // ChatGPT KaTeX annotation'larını bul
+        // ChatGPT KaTeX annotation'larını bul ve işle
+
+        // Method 1: Try MathML annotation (standard KaTeX output)
         const latexAnnotations = contentArea.querySelectorAll('annotation[encoding="application/x-tex"]');
+        console.log(`[LaTeX] Found ${latexAnnotations.length} MathML annotations`);
+
         latexAnnotations.forEach(annotation => {
-          const latexCode = annotation.textContent;
+          // Get raw LaTeX code - preserve backslashes!
+          let latexCode = annotation.textContent;
+          console.log('[LaTeX] Original annotation:', latexCode);
+          console.log('[LaTeX] Backslash count:', (latexCode.match(/\\/g) || []).length);
+
           // En dıştaki katex elementini bul
           let katexElement = annotation.closest('.katex');
           if (katexElement) {
             // Inline mi block mi kontrol et
             const isBlock = katexElement.classList.contains('katex-display');
             const wrapper = isBlock ? '$$' : '$';
-            const textNode = document.createTextNode(`${wrapper}${latexCode}${wrapper}`);
+
+            // Use string concatenation to preserve backslashes (safer than template literal)
+            const latexText = wrapper + latexCode + wrapper;
+            console.log('[LaTeX] Final markdown:', latexText);
+            console.log('[LaTeX] Final backslash count:', (latexText.match(/\\/g) || []).length);
+
+            // Create text node with preserved LaTeX
+            const textNode = document.createTextNode(latexText);
             katexElement.parentNode.replaceChild(textNode, katexElement);
           }
         });
 
-        content = contentArea.textContent || contentArea.innerText;
+        // Method 2: Try finding .katex elements with data attributes (alternative)
+        const katexElements = contentArea.querySelectorAll('.katex[data-latex], .katex-mathml, mjx-container');
+        console.log(`[LaTeX] Found ${katexElements.length} alternative math elements`);
+
+        katexElements.forEach(element => {
+          const latex = element.getAttribute('data-latex') || element.getAttribute('data-expr');
+          if (latex) {
+            console.log('[LaTeX] Found from attribute:', latex);
+            const isBlock = element.classList.contains('katex-display') || element.classList.contains('display');
+            const wrapper = isBlock ? '$$' : '$';
+            const textNode = document.createTextNode(`${wrapper}${latex}${wrapper}`);
+            element.parentNode.replaceChild(textNode, element);
+          }
+        });
+
+        // Convert HTML to Markdown preserving formatting
+        content = htmlToMarkdown(contentArea).trim();
       } else {
-        content = contentElement.textContent || contentElement.innerText;
+        content = htmlToMarkdown(contentElement).trim();
       }
+
+      // Normalize LaTeX for better Word compatibility
+      content = normalizeLatexForWord(content);
+
+      // Debug: Log extracted markdown
+      console.log('=== Extracted Markdown ===');
+      console.log(content);
+      console.log('========================');
 
       await handleExportAction(action, content, btn);
     });
