@@ -94,7 +94,7 @@ function normalizeLatexForWord(markdown) {
   result = wrapInMath(result, 'β', '\\beta');
   result = wrapInMath(result, 'γ', '\\gamma');
   result = wrapInMath(result, 'δ', '\\delta');
-  result = wrapInMath(result, 'ε', '\\epsilon');
+  result = wrapInMath(result, 'ε', '\\varepsilon');  // FIXED: variant epsilon (standard in math)
   result = wrapInMath(result, 'ζ', '\\zeta');
   result = wrapInMath(result, 'η', '\\eta');
   result = wrapInMath(result, 'θ', '\\theta');
@@ -109,7 +109,7 @@ function normalizeLatexForWord(markdown) {
   result = wrapInMath(result, 'σ', '\\sigma');
   result = wrapInMath(result, 'τ', '\\tau');
   result = wrapInMath(result, 'υ', '\\upsilon');
-  result = wrapInMath(result, 'φ', '\\phi');
+  result = wrapInMath(result, 'φ', '\\varphi');      // FIXED: variant phi (standard in math)
   result = wrapInMath(result, 'χ', '\\chi');
   result = wrapInMath(result, 'ψ', '\\psi');
   result = wrapInMath(result, 'ω', '\\omega');
