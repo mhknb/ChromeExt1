@@ -622,17 +622,25 @@ async function downloadRtf(content, settings) {
 
 // PDF dosyası oluştur ve indir
 async function downloadPdf(content, settings) {
-  // HTML içeriği oluştur ve yazdırma dialogunu aç
-  const htmlContent = createPdfHtmlContent(content, settings);
+  try {
+    // Use PdfConverterBundled from lib/pdf-converter-bundled.js
+    if (typeof window.PdfConverterBundled === 'undefined') {
+      throw new Error('PDF converter yüklenemedi. Sayfayı yenileyin ve tekrar deneyin.');
+    }
 
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
+    console.log('[downloadPdf] Starting PDF export with PdfConverterBundled');
+    console.log('[downloadPdf] Content length:', content.length);
 
-  // Yazdırma dialogunu otomatik aç
-  setTimeout(() => {
-    printWindow.print();
-  }, 500);
+    const converter = new window.PdfConverterBundled();
+    await converter.exportToPdf(content);
+
+    console.log('[downloadPdf] PDF export completed successfully');
+  } catch (error) {
+    console.error('[downloadPdf] PDF generation failed:', error);
+    // Fallback: Show error to user
+    alert(`PDF oluşturulamadı: ${error.message}\n\nLütfen sayfayı yenileyin ve tekrar deneyin.`);
+    throw error;
+  }
 }
 
 // RTF içerik oluştur (Word tarafından sorunsuz açılır)
