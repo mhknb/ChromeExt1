@@ -7,6 +7,7 @@ import katex from 'katex';
 import { jsPDF } from 'jspdf';
 import { marked } from 'marked';
 import { notoSerifRegularBase64, notoSerifBoldBase64 } from './fonts/noto-serif-font.js';
+import { notoEmojiRegularBase64 } from './fonts/noto-emoji-font.js';
 import 'katex/dist/katex.min.css';
 
 class PdfConverterBundled {
@@ -84,6 +85,11 @@ class PdfConverterBundled {
       pdf.addFileToVFS('NotoSerif-Bold.ttf', notoSerifBoldBase64);
       pdf.addFont('NotoSerif-Regular.ttf', 'NotoSerif', 'normal');
       pdf.addFont('NotoSerif-Bold.ttf', 'NotoSerif', 'bold');
+
+      // Add Noto Emoji font for emoji support (✓ ✗ etc.)
+      pdf.addFileToVFS('NotoEmoji-Regular.ttf', notoEmojiRegularBase64);
+      pdf.addFont('NotoEmoji-Regular.ttf', 'NotoEmoji', 'normal');
+
       pdf.setFont('NotoSerif');
 
       // Page settings
@@ -103,21 +109,27 @@ class PdfConverterBundled {
         return false;
       };
 
+      // Helper function to check if text contains emoji or special symbols
+      const hasEmojiOrSymbols = (text) => {
+        if (!text) return false;
+        // Check for common emoji and symbol characters
+        const emojiPattern = /[✓✗●○◆◇■□▪▫♦♢🔴🟢⭕✅❌✔️❎☑️]/;
+        return emojiPattern.test(text);
+      };
+
       // Helper function to process inline LaTeX and formatting
       const processInlineText = (text, keepBold = false) => {
         if (!text) return '';
 
-        // Convert emojis to simple text (emojis and some Unicode symbols don't render in Noto Serif)
-        text = text.replace(/✅/g, '[✓]'); // Check mark emoji
-        text = text.replace(/❌/g, '[✗]'); // Cross mark emoji
-        text = text.replace(/✔️/g, '[✓]'); // Heavy check mark
-        text = text.replace(/❎/g, '[✗]'); // Cross mark button
-        text = text.replace(/☑️/g, '[✓]'); // Ballot box with check
-        text = text.replace(/✓/g, '[✓]'); // Plain check mark
-        text = text.replace(/✗/g, '[✗]'); // Plain ballot X
-        text = text.replace(/🔴/g, '[●]'); // Red circle
-        text = text.replace(/🟢/g, '[○]'); // Green circle
-        text = text.replace(/⭕/g, '[○]'); // Hollow red circle
+        // Convert emojis to Unicode equivalents (will be rendered with NotoEmoji font)
+        text = text.replace(/✅/g, '✓'); // Check mark emoji → check mark
+        text = text.replace(/❌/g, '✗'); // Cross mark emoji → ballot X
+        text = text.replace(/✔️/g, '✓'); // Heavy check mark → check mark
+        text = text.replace(/❎/g, '✗'); // Cross mark button → ballot X
+        text = text.replace(/☑️/g, '✓'); // Ballot box with check → check mark
+        text = text.replace(/🔴/g, '●'); // Red circle → black circle
+        text = text.replace(/🟢/g, '○'); // Green circle → white circle
+        text = text.replace(/⭕/g, '○'); // Hollow red circle → white circle
 
         // Store bold sections if needed
         let boldMarkers = [];
@@ -402,6 +414,15 @@ class PdfConverterBundled {
 
               // Draw text - handle multi-line properly
               const headerText = extractText(table.header[col]);
+
+              // Use NotoEmoji font if text contains emoji/symbols, otherwise use NotoSerif
+              const useEmojiFont = hasEmojiOrSymbols(headerText);
+              if (useEmojiFont) {
+                pdf.setFont('NotoEmoji', 'normal');
+              } else {
+                pdf.setFont('NotoSerif', 'bold');
+              }
+
               const lines = pdf.splitTextToSize(headerText, cellWidth - (cellPadding * 2));
 
               // Start from top of cell
@@ -409,6 +430,11 @@ class PdfConverterBundled {
               for (let i = 0; i < lines.length; i++) {
                 pdf.text(lines[i], cellX + cellPadding, lineY);
                 lineY += 4.5; // Line height for 10pt font
+              }
+
+              // Reset font back to NotoSerif bold for next header
+              if (useEmojiFont) {
+                pdf.setFont('NotoSerif', 'bold');
               }
             }
             yPosition += headerHeight;
@@ -453,6 +479,13 @@ class PdfConverterBundled {
 
                 // Draw text - handle multi-line properly
                 const cellText = extractText(row[col]);
+
+                // Use NotoEmoji font if text contains emoji/symbols, otherwise use NotoSerif
+                const useEmojiFont = hasEmojiOrSymbols(cellText);
+                if (useEmojiFont) {
+                  pdf.setFont('NotoEmoji', 'normal');
+                }
+
                 const lines = pdf.splitTextToSize(cellText, cellWidth - (cellPadding * 2));
 
                 // Start text slightly below top of cell
@@ -460,6 +493,11 @@ class PdfConverterBundled {
                 for (let i = 0; i < lines.length; i++) {
                   pdf.text(lines[i], cellX + cellPadding, lineY);
                   lineY += 4.5; // Line height for 10pt font
+                }
+
+                // Reset font back to NotoSerif for next cell
+                if (useEmojiFont) {
+                  pdf.setFont('NotoSerif', 'normal');
                 }
               }
 
