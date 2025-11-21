@@ -363,13 +363,16 @@ class PdfConverterBundled {
               // Draw cell background and border
               pdf.rect(cellX, yPosition, cellWidth, headerHeight, 'FD');
 
-              // Draw text
+              // Draw text - handle multi-line properly
               const headerText = extractText(table.header[col]);
               const lines = pdf.splitTextToSize(headerText, cellWidth - (cellPadding * 2));
 
-              // Center text vertically
-              const textY = yPosition + (headerHeight / 2) + 1;
-              pdf.text(lines, cellX + cellPadding, textY);
+              // Start from top of cell
+              let lineY = yPosition + 3.5;
+              for (let i = 0; i < lines.length; i++) {
+                pdf.text(lines[i], cellX + cellPadding, lineY);
+                lineY += 4; // Line height
+              }
             }
             yPosition += headerHeight;
 
@@ -409,13 +412,16 @@ class PdfConverterBundled {
                 // Draw cell background and border
                 pdf.rect(cellX, yPosition, cellWidth, maxHeight, 'FD');
 
-                // Draw text
+                // Draw text - handle multi-line properly
                 const cellText = extractText(row[col]);
                 const lines = pdf.splitTextToSize(cellText, cellWidth - (cellPadding * 2));
 
                 // Start text slightly below top of cell
-                const textY = yPosition + 4;
-                pdf.text(lines, cellX + cellPadding, textY);
+                let lineY = yPosition + 3.5;
+                for (let i = 0; i < lines.length; i++) {
+                  pdf.text(lines[i], cellX + cellPadding, lineY);
+                  lineY += 4; // Line height
+                }
               }
 
               yPosition += maxHeight;
