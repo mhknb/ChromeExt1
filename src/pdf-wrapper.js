@@ -332,7 +332,7 @@ class PdfConverterBundled {
             checkNewPage(20);
 
             // Reset all colors and styles for clean table rendering
-            pdf.setFontSize(9);
+            pdf.setFontSize(8);
             pdf.setFont('NotoSerif', 'normal');
             pdf.setTextColor(0, 0, 0); // Ensure text is black
             pdf.setFillColor(255, 255, 255); // Reset fill to white
@@ -340,19 +340,23 @@ class PdfConverterBundled {
 
             const table = token;
             const colCount = table.header.length;
-            const cellWidth = contentWidth / colCount;
-            const cellPadding = 1.5;
-            const minRowHeight = 7;
+
+            // Use smaller margins for tables to maximize width
+            const tableMargin = 5;
+            const tableContentWidth = pageWidth - (tableMargin * 2);
+            const cellWidth = tableContentWidth / colCount;
+            const cellPadding = 1;
+            const minRowHeight = 6;
 
             console.log('[PDF] Rendering table with', colCount, 'columns');
-            console.log('[PDF] Cell width:', cellWidth, 'mm');
+            console.log('[PDF] Table width:', tableContentWidth, 'mm, Cell width:', cellWidth, 'mm');
 
             // Calculate header height first
             let headerHeight = minRowHeight;
             for (let col = 0; col < table.header.length; col++) {
               const headerText = extractText(table.header[col]);
               const lines = pdf.splitTextToSize(headerText, cellWidth - (cellPadding * 2));
-              const height = lines.length * 4 + (cellPadding * 2);
+              const height = lines.length * 3.5 + (cellPadding * 2);
               if (height > headerHeight) headerHeight = height;
             }
 
@@ -363,7 +367,7 @@ class PdfConverterBundled {
             pdf.setFont('NotoSerif', 'bold');
 
             for (let col = 0; col < table.header.length; col++) {
-              const cellX = margin + (col * cellWidth);
+              const cellX = tableMargin + (col * cellWidth);
 
               // Draw cell background and border
               pdf.rect(cellX, yPosition, cellWidth, headerHeight, 'FD');
@@ -376,7 +380,7 @@ class PdfConverterBundled {
               let lineY = yPosition + 3.5;
               for (let i = 0; i < lines.length; i++) {
                 pdf.text(lines[i], cellX + cellPadding, lineY);
-                lineY += 4; // Line height
+                lineY += 3.5; // Line height for smaller font
               }
             }
             yPosition += headerHeight;
@@ -393,7 +397,7 @@ class PdfConverterBundled {
               for (let col = 0; col < row.length; col++) {
                 const cellText = extractText(row[col]);
                 const lines = pdf.splitTextToSize(cellText, cellWidth - (cellPadding * 2));
-                const height = lines.length * 4 + (cellPadding * 2);
+                const height = lines.length * 3.5 + (cellPadding * 2);
                 if (height > maxHeight) maxHeight = height;
               }
 
@@ -412,7 +416,7 @@ class PdfConverterBundled {
 
               // Draw cells
               for (let col = 0; col < row.length; col++) {
-                const cellX = margin + (col * cellWidth);
+                const cellX = tableMargin + (col * cellWidth);
 
                 // Draw cell background and border
                 pdf.rect(cellX, yPosition, cellWidth, maxHeight, 'FD');
@@ -425,7 +429,7 @@ class PdfConverterBundled {
                 let lineY = yPosition + 3.5;
                 for (let i = 0; i < lines.length; i++) {
                   pdf.text(lines[i], cellX + cellPadding, lineY);
-                  lineY += 4; // Line height
+                  lineY += 3.5; // Line height for smaller font
                 }
               }
 
