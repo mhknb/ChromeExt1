@@ -104,8 +104,19 @@ class PdfConverterBundled {
       };
 
       // Helper function to process inline LaTeX and formatting
-      const processInlineText = (text) => {
+      const processInlineText = (text, keepBold = false) => {
         if (!text) return '';
+
+        // Store bold sections if needed
+        let boldMarkers = [];
+        if (keepBold) {
+          // Find all bold sections and their positions
+          let boldPattern = /\*\*(.+?)\*\*/g;
+          let match;
+          while ((match = boldPattern.exec(text)) !== null) {
+            boldMarkers.push({ start: match.index, end: boldPattern.lastIndex, text: match[1] });
+          }
+        }
 
         // First, replace inline math $...$ with styled brackets
         // Using unicode mathematical characters for better readability
@@ -319,39 +330,62 @@ class PdfConverterBundled {
 
           case 'table':
             checkNewPage(20);
-            pdf.setFontSize(10);
+            pdf.setFontSize(9);
             pdf.setFont('NotoSerif', 'normal');
 
             const table = token;
             const colCount = table.header.length;
             const cellWidth = contentWidth / colCount;
-            const cellPadding = 2;
-            const rowHeight = 8;
+            const cellPadding = 1.5;
+            const minRowHeight = 7;
+
+            console.log('[PDF] Rendering table with', colCount, 'columns');
+            console.log('[PDF] Cell width:', cellWidth, 'mm');
+
+            // Calculate header height first
+            let headerHeight = minRowHeight;
+            for (let col = 0; col < table.header.length; col++) {
+              const headerText = extractText(table.header[col]);
+              const lines = pdf.splitTextToSize(headerText, cellWidth - (cellPadding * 2));
+              const height = lines.length * 4 + (cellPadding * 2);
+              if (height > headerHeight) headerHeight = height;
+            }
 
             // Draw table header
             pdf.setFillColor(240, 240, 240);
+            pdf.setDrawColor(180, 180, 180);
+            pdf.setLineWidth(0.3);
             pdf.setFont('NotoSerif', 'bold');
 
             for (let col = 0; col < table.header.length; col++) {
               const cellX = margin + (col * cellWidth);
-              pdf.rect(cellX, yPosition, cellWidth, rowHeight, 'FD');
 
+              // Draw cell background and border
+              pdf.rect(cellX, yPosition, cellWidth, headerHeight, 'FD');
+
+              // Draw text
               const headerText = extractText(table.header[col]);
               const lines = pdf.splitTextToSize(headerText, cellWidth - (cellPadding * 2));
-              pdf.text(lines, cellX + cellPadding, yPosition + 5);
+
+              // Center text vertically
+              const textY = yPosition + (headerHeight / 2) + 1;
+              pdf.text(lines, cellX + cellPadding, textY);
             }
-            yPosition += rowHeight;
+            yPosition += headerHeight;
 
             // Draw table rows
             pdf.setFont('NotoSerif', 'normal');
-            for (let row of table.rows) {
-              let maxHeight = rowHeight;
+            pdf.setFillColor(255, 255, 255);
+
+            for (let rowIdx = 0; rowIdx < table.rows.length; rowIdx++) {
+              const row = table.rows[rowIdx];
+              let maxHeight = minRowHeight;
 
               // Calculate row height based on content
               for (let col = 0; col < row.length; col++) {
                 const cellText = extractText(row[col]);
                 const lines = pdf.splitTextToSize(cellText, cellWidth - (cellPadding * 2));
-                const height = lines.length * 5 + (cellPadding * 2);
+                const height = lines.length * 4 + (cellPadding * 2);
                 if (height > maxHeight) maxHeight = height;
               }
 
@@ -361,19 +395,36 @@ class PdfConverterBundled {
                 yPosition = margin;
               }
 
+              // Alternate row colors for better readability
+              if (rowIdx % 2 === 0) {
+                pdf.setFillColor(255, 255, 255);
+              } else {
+                pdf.setFillColor(250, 250, 250);
+              }
+
               // Draw cells
               for (let col = 0; col < row.length; col++) {
                 const cellX = margin + (col * cellWidth);
-                pdf.rect(cellX, yPosition, cellWidth, maxHeight);
 
+                // Draw cell background and border
+                pdf.rect(cellX, yPosition, cellWidth, maxHeight, 'FD');
+
+                // Draw text
                 const cellText = extractText(row[col]);
                 const lines = pdf.splitTextToSize(cellText, cellWidth - (cellPadding * 2));
-                pdf.text(lines, cellX + cellPadding, yPosition + 5);
+
+                // Start text slightly below top of cell
+                const textY = yPosition + 4;
+                pdf.text(lines, cellX + cellPadding, textY);
               }
 
               yPosition += maxHeight;
             }
             yPosition += 5;
+
+            // Reset colors
+            pdf.setFillColor(255, 255, 255);
+            pdf.setDrawColor(0, 0, 0);
             break;
 
           case 'hr':
