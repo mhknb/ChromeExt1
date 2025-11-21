@@ -263,6 +263,11 @@ class PdfConverterBundled {
                 pdf.text(mathLines[i], margin + 15, yPosition + 8 + (i * 6));
               }
               yPosition += mathHeight + 3;
+
+              // Reset colors after math block
+              pdf.setFillColor(255, 255, 255);
+              pdf.setDrawColor(0, 0, 0);
+              pdf.setTextColor(0, 0, 0);
             } else {
               // Regular code block
               pdf.setFontSize(9);
@@ -286,6 +291,11 @@ class PdfConverterBundled {
                 yPosition += 4.5;
               }
               yPosition += 6;
+
+              // Reset colors after code block
+              pdf.setFillColor(255, 255, 255);
+              pdf.setDrawColor(0, 0, 0);
+              pdf.setTextColor(0, 0, 0);
             }
             break;
 
@@ -331,18 +341,20 @@ class PdfConverterBundled {
           case 'table':
             checkNewPage(20);
 
-            // Reset all colors and styles for clean table rendering
+            // CRITICAL: Reset ALL colors, fonts, and styles for clean table rendering
+            // This prevents issues from previous code/math blocks affecting the table
+            pdf.setTextColor(0, 0, 0); // Black text
+            pdf.setFillColor(255, 255, 255); // White fill
+            pdf.setDrawColor(0, 0, 0); // Black borders
+            pdf.setLineWidth(0.1); // Reset line width
             pdf.setFontSize(8);
             pdf.setFont('NotoSerif', 'normal');
-            pdf.setTextColor(0, 0, 0); // Ensure text is black
-            pdf.setFillColor(255, 255, 255); // Reset fill to white
-            pdf.setDrawColor(0, 0, 0); // Reset draw to black
 
             const table = token;
             const colCount = table.header.length;
 
             // Use smaller margins for tables to maximize width
-            const tableMargin = 5;
+            const tableMargin = 10;
             const tableContentWidth = pageWidth - (tableMargin * 2);
             const cellWidth = tableContentWidth / colCount;
             const cellPadding = 1;
@@ -361,9 +373,11 @@ class PdfConverterBundled {
             }
 
             // Draw table header
-            pdf.setFillColor(240, 240, 240);
-            pdf.setDrawColor(180, 180, 180);
+            pdf.setTextColor(0, 0, 0); // Ensure black text for header
+            pdf.setFillColor(240, 240, 240); // Light gray background
+            pdf.setDrawColor(180, 180, 180); // Gray borders
             pdf.setLineWidth(0.3);
+            pdf.setFontSize(8);
             pdf.setFont('NotoSerif', 'bold');
 
             for (let col = 0; col < table.header.length; col++) {
@@ -386,8 +400,11 @@ class PdfConverterBundled {
             yPosition += headerHeight;
 
             // Draw table rows
+            pdf.setTextColor(0, 0, 0); // Ensure black text for rows
+            pdf.setFontSize(8);
             pdf.setFont('NotoSerif', 'normal');
-            pdf.setFillColor(255, 255, 255);
+            pdf.setDrawColor(180, 180, 180);
+            pdf.setLineWidth(0.3);
 
             for (let rowIdx = 0; rowIdx < table.rows.length; rowIdx++) {
               const row = table.rows[rowIdx];
@@ -420,6 +437,9 @@ class PdfConverterBundled {
 
                 // Draw cell background and border
                 pdf.rect(cellX, yPosition, cellWidth, maxHeight, 'FD');
+
+                // Ensure text color is black before drawing text
+                pdf.setTextColor(0, 0, 0);
 
                 // Draw text - handle multi-line properly
                 const cellText = extractText(row[col]);
