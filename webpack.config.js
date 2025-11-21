@@ -55,9 +55,12 @@ module.exports = [
       path: path.resolve(__dirname, 'lib'),
       library: 'PdfConverterBundled',
       libraryTarget: 'window',
-      libraryExport: 'default'
+      libraryExport: 'default',
+      chunkLoading: false,
+      wasmLoading: false,
+      publicPath: ''
     },
-    target: ['web', 'es5'],
+    target: 'web',
     resolve: {
       extensions: ['.js', '.mjs'],
       fallback: {
@@ -111,6 +114,9 @@ module.exports = [
       hints: false,
       maxEntrypointSize: 2048000,
       maxAssetSize: 2048000
+    },
+    experiments: {
+      outputModule: false
     }
   }
 ];
