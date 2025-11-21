@@ -107,6 +107,16 @@ class PdfConverterBundled {
       const processInlineText = (text, keepBold = false) => {
         if (!text) return '';
 
+        // Convert emojis to text equivalents (emojis don't render in standard PDF fonts)
+        text = text.replace(/✅/g, '✓'); // Check mark emoji → Unicode check mark
+        text = text.replace(/❌/g, '✗'); // Cross mark emoji → Unicode ballot X
+        text = text.replace(/✔️/g, '✓'); // Heavy check mark → Unicode check mark
+        text = text.replace(/❎/g, '✗'); // Cross mark button → Unicode ballot X
+        text = text.replace(/☑️/g, '✓'); // Ballot box with check → Unicode check mark
+        text = text.replace(/🔴/g, '●'); // Red circle → Black circle
+        text = text.replace(/🟢/g, '○'); // Green circle → White circle
+        text = text.replace(/⭕/g, '○'); // Hollow red circle → White circle
+
         // Store bold sections if needed
         let boldMarkers = [];
         if (keepBold) {
