@@ -32,7 +32,7 @@
         "https://gemini.google.com/*",
         "https://chat.deepseek.com/*"
       ],
-      "js": ["lib/docx-converter-bundled.js", "content/content.js"],
+      "js": ["lib/docx-converter-bundled.js", "lib/pdf-converter-bundled.js", "content/content.js"],
       "css": ["content/content.css"],
       "run_at": "document_end"
     }
@@ -44,5 +44,17 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/*.js", "lib/*.woff", "lib/*.woff2", "lib/*.ttf"],
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://chatgpt.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://chat.deepseek.com/*"
+      ]
+    }
+  ]
 }
