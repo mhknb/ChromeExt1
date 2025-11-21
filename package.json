@@ -22,7 +22,7 @@
     "@m2d/core": "^1.7.1",
     "@m2d/math": "^0.0.6",
     "@m2d/table": "^0.1.1",
-    "html2canvas": "^1.4.1",
+    "html-to-image": "^1.11.13",
     "jspdf": "^2.5.2",
     "katex": "^0.16.11",
     "marked": "^11.1.1",

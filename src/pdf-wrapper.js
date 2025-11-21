@@ -5,7 +5,7 @@
 
 import katex from 'katex';
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { toSvg } from 'html-to-image';
 import { marked } from 'marked';
 import 'katex/dist/katex.min.css';
 
@@ -62,7 +62,7 @@ class PdfConverterBundled {
   }
 
   /**
-   * Export content as PDF using jsPDF + html2canvas
+   * Export content as PDF using jsPDF + html-to-image (SVG)
    * @param {string} markdown - Markdown content with LaTeX formulas
    * @returns {Promise<void>}
    */
@@ -242,40 +242,32 @@ class PdfConverterBundled {
       const katexElements = element.querySelectorAll('.katex');
       console.log('[PDF] Found', katexElements.length, 'KaTeX elements');
 
-      console.log('[PDF] Rendering HTML to canvas with high quality');
+      console.log('[PDF] Rendering HTML to SVG with vector quality');
 
-      // Step 4: Convert HTML to canvas with highest quality settings
+      // Step 4: Convert HTML to SVG with highest quality settings
       console.log('[PDF] Element dimensions:', element.offsetWidth, 'x', element.offsetHeight);
       console.log('[PDF] Element scroll dimensions:', element.scrollWidth, 'x', element.scrollHeight);
 
-      const canvas = await html2canvas(element, {
-        scale: 4, // Maximum quality for crisp text and math formulas
-        useCORS: true,
-        logging: true, // Enable logging to debug font issues
-        allowTaint: true,
+      const svgDataUrl = await toSvg(element, {
+        quality: 1.0,
         backgroundColor: '#ffffff',
         width: element.scrollWidth,
         height: element.scrollHeight,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-        x: 0,
-        y: 0,
-        scrollX: 0,
-        scrollY: 0,
-        foreignObjectRendering: false, // Use traditional rendering for better compatibility
-        imageTimeout: 0, // No timeout for image loading
+        pixelRatio: 1, // SVG doesn't need high pixel ratio
+        cacheBust: true,
+        fontEmbedCSS: '', // Let it embed fonts automatically
       });
 
-      console.log('[PDF] Canvas created, generating PDF');
-      console.log('[PDF] Canvas dimensions:', canvas.width, 'x', canvas.height);
+      console.log('[PDF] SVG created, generating PDF');
+      console.log('[PDF] SVG data URL length:', svgDataUrl.length);
 
-      // Check if canvas is empty
-      if (canvas.width === 0 || canvas.height === 0) {
-        throw new Error('Canvas boyutu sıfır - içerik render edilemedi');
+      // Check if SVG is empty
+      if (!svgDataUrl || svgDataUrl.length < 100) {
+        throw new Error('SVG oluşturulamadı - içerik render edilemedi');
       }
 
-      // Step 5: Create PDF from canvas using PNG (lossless)
-      const imgData = canvas.toDataURL('image/png'); // Changed from JPEG to PNG
+      // Step 5: Create PDF from SVG (vector format for perfect quality)
+      const imgData = svgDataUrl;
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -285,19 +277,19 @@ class PdfConverterBundled {
 
       const imgWidth = 210; // A4 width in mm
       const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const imgHeight = (element.scrollHeight * imgWidth) / element.scrollWidth;
       let heightLeft = imgHeight;
       let position = 0;
 
-      // Add first page (using PNG for better quality)
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, '', 'SLOW');
+      // Add first page (using SVG for perfect vector quality)
+      pdf.addImage(imgData, 'SVG', 0, position, imgWidth, imgHeight, '', 'NONE');
       heightLeft -= pageHeight;
 
       // Add remaining pages if content is longer than one page
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, '', 'SLOW');
+        pdf.addImage(imgData, 'SVG', 0, position, imgWidth, imgHeight, '', 'NONE');
         heightLeft -= pageHeight;
       }
 
