@@ -1,5 +1,113 @@
 // Content Script - AI platformlarında çalışan ana script
 
+/**
+ * Convert HTML element to Markdown
+ * @param {HTMLElement} element - HTML element to convert
+ * @returns {string} - Markdown string
+ */
+function htmlToMarkdown(element) {
+  let markdown = '';
+
+  // Process each child node
+  for (const node of element.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      markdown += node.textContent;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const tag = node.tagName.toLowerCase();
+
+      switch (tag) {
+        case 'h1':
+          markdown += `\n# ${node.textContent}\n\n`;
+          break;
+        case 'h2':
+          markdown += `\n## ${node.textContent}\n\n`;
+          break;
+        case 'h3':
+          markdown += `\n### ${node.textContent}\n\n`;
+          break;
+        case 'h4':
+          markdown += `\n#### ${node.textContent}\n\n`;
+          break;
+        case 'h5':
+          markdown += `\n##### ${node.textContent}\n\n`;
+          break;
+        case 'h6':
+          markdown += `\n###### ${node.textContent}\n\n`;
+          break;
+        case 'p':
+          markdown += htmlToMarkdown(node) + '\n\n';
+          break;
+        case 'strong':
+        case 'b':
+          markdown += `**${node.textContent}**`;
+          break;
+        case 'em':
+        case 'i':
+          markdown += `*${node.textContent}*`;
+          break;
+        case 'code':
+          // Check if inside pre (code block) or inline code
+          if (node.parentElement && node.parentElement.tagName === 'PRE') {
+            const language = node.className.replace('language-', '');
+            markdown += `\`\`\`${language}\n${node.textContent}\n\`\`\`\n\n`;
+          } else {
+            markdown += `\`${node.textContent}\``;
+          }
+          break;
+        case 'pre':
+          const codeElement = node.querySelector('code');
+          if (codeElement) {
+            const language = codeElement.className.replace('language-', '');
+            markdown += `\`\`\`${language}\n${codeElement.textContent}\n\`\`\`\n\n`;
+          } else {
+            markdown += `\`\`\`\n${node.textContent}\n\`\`\`\n\n`;
+          }
+          break;
+        case 'ul':
+          for (const li of node.querySelectorAll('li')) {
+            markdown += `- ${li.textContent}\n`;
+          }
+          markdown += '\n';
+          break;
+        case 'ol':
+          let index = 1;
+          for (const li of node.querySelectorAll('li')) {
+            markdown += `${index}. ${li.textContent}\n`;
+            index++;
+          }
+          markdown += '\n';
+          break;
+        case 'li':
+          // Handled by ul/ol
+          break;
+        case 'a':
+          const href = node.getAttribute('href') || '';
+          markdown += `[${node.textContent}](${href})`;
+          break;
+        case 'br':
+          markdown += '\n';
+          break;
+        case 'hr':
+          markdown += '\n---\n\n';
+          break;
+        case 'blockquote':
+          const lines = node.textContent.split('\n');
+          markdown += lines.map(line => `> ${line}`).join('\n') + '\n\n';
+          break;
+        case 'table':
+          // Basic table support - can be enhanced
+          markdown += '\n' + node.outerHTML + '\n\n'; // Keep as HTML for now
+          break;
+        default:
+          // Recursively process other elements
+          markdown += htmlToMarkdown(node);
+      }
+    }
+  }
+
+  return markdown;
+}
+
 // Platform-specific selectors
 const PLATFORM_SELECTORS = {
   chatgpt: {
@@ -502,7 +610,7 @@ function addExportButtonsToMessage(messageElement, platform) {
         }
       });
 
-      // Sadece content alanını al
+      // Sadece content alanını al ve HTML'i Markdown'a çevir
       let content;
       const contentArea = contentElement.querySelector(selectors.content);
       if (contentArea) {
@@ -522,10 +630,16 @@ function addExportButtonsToMessage(messageElement, platform) {
           }
         });
 
-        content = contentArea.textContent || contentArea.innerText;
+        // Convert HTML to Markdown preserving formatting
+        content = htmlToMarkdown(contentArea).trim();
       } else {
-        content = contentElement.textContent || contentElement.innerText;
+        content = htmlToMarkdown(contentElement).trim();
       }
+
+      // Debug: Log extracted markdown
+      console.log('=== Extracted Markdown ===');
+      console.log(content);
+      console.log('========================');
 
       await handleExportAction(action, content, btn);
     });
