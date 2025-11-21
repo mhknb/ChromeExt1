@@ -19,6 +19,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@m2d/core": "^1.7.1",
+    "@m2d/math": "^0.0.6",
+    "@m2d/table": "^0.1.1",
     "mdast2docx": "^1.6.1",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
