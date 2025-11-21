@@ -1,6 +1,72 @@
 // Content Script - AI platformlarında çalışan ana script
 
 /**
+ * Normalize LaTeX for better Word compatibility
+ * Fixes common LaTeX commands that Word's OMML engine prefers
+ * Also converts Unicode math symbols back to LaTeX if annotation extraction failed
+ * @param {string} markdown - Markdown with LaTeX
+ * @returns {string} - Normalized markdown
+ */
+function normalizeLatexForWord(markdown) {
+  let result = markdown;
+
+  // Debug: Check if we have any LaTeX in the input
+  console.log('[Normalize] Input has $ signs:', result.includes('$'));
+  console.log('[Normalize] Input sample:', result.substring(0, 300));
+
+  // STEP 1: Convert Unicode math symbols to LaTeX (fallback if annotation extraction failed)
+  // This helps when KaTeX renders to Unicode but we don't have access to source LaTeX
+  result = result
+    .replace(/≤/g, '\\leq')
+    .replace(/≥/g, '\\geq')
+    .replace(/≠/g, '\\neq')
+    .replace(/⊆/g, '\\subseteq')
+    .replace(/⊇/g, '\\supseteq')
+    .replace(/⊂/g, '\\subset')
+    .replace(/⊃/g, '\\supset')
+    .replace(/∈/g, '\\in')
+    .replace(/∉/g, '\\notin')
+    .replace(/∪/g, '\\cup')
+    .replace(/∩/g, '\\cap')
+    .replace(/×/g, '\\times')
+    .replace(/÷/g, '\\div')
+    .replace(/±/g, '\\pm')
+    .replace(/∞/g, '\\infty')
+    .replace(/∫/g, '\\int')
+    .replace(/∑/g, '\\sum')
+    .replace(/∏/g, '\\prod')
+    .replace(/√/g, '\\sqrt')
+    .replace(/∂/g, '\\partial')
+    .replace(/∇/g, '\\nabla')
+    .replace(/α/g, '\\alpha')
+    .replace(/β/g, '\\beta')
+    .replace(/γ/g, '\\gamma')
+    .replace(/δ/g, '\\delta')
+    .replace(/ε/g, '\\epsilon')
+    .replace(/θ/g, '\\theta')
+    .replace(/λ/g, '\\lambda')
+    .replace(/μ/g, '\\mu')
+    .replace(/π/g, '\\pi')
+    .replace(/σ/g, '\\sigma')
+    .replace(/τ/g, '\\tau')
+    .replace(/φ/g, '\\phi')
+    .replace(/ψ/g, '\\psi')
+    .replace(/ω/g, '\\omega')
+    .replace(/Δ/g, '\\Delta')
+    .replace(/Σ/g, '\\Sigma')
+    .replace(/Π/g, '\\Pi')
+    .replace(/Ω/g, '\\Omega');
+
+  // STEP 2: Normalize LaTeX commands (short form → long form for Word)
+  result = result
+    .replace(/\\le\b/g, '\\leq')          // Normalize \le → \leq
+    .replace(/\\ge\b/g, '\\geq');         // Normalize \ge → \geq
+
+  console.log('[Normalize] Output sample:', result.substring(0, 300));
+  return result;
+}
+
+/**
  * Convert HTML element to Markdown
  * @param {HTMLElement} element - HTML element to convert
  * @returns {string} - Markdown string
@@ -615,18 +681,46 @@ function addExportButtonsToMessage(messageElement, platform) {
       const contentArea = contentElement.querySelector(selectors.content);
       if (contentArea) {
         // Matematiksel formülleri LaTeX formatında koru
-        // ChatGPT KaTeX annotation'larını bul
+        // ChatGPT KaTeX annotation'larını bul ve işle
+
+        // Method 1: Try MathML annotation (standard KaTeX output)
         const latexAnnotations = contentArea.querySelectorAll('annotation[encoding="application/x-tex"]');
+        console.log(`[LaTeX] Found ${latexAnnotations.length} MathML annotations`);
+
         latexAnnotations.forEach(annotation => {
-          const latexCode = annotation.textContent;
+          // Get raw LaTeX code - preserve backslashes!
+          let latexCode = annotation.textContent;
+          console.log('[LaTeX] Original:', latexCode);
+
           // En dıştaki katex elementini bul
           let katexElement = annotation.closest('.katex');
           if (katexElement) {
             // Inline mi block mi kontrol et
             const isBlock = katexElement.classList.contains('katex-display');
             const wrapper = isBlock ? '$$' : '$';
-            const textNode = document.createTextNode(`${wrapper}${latexCode}${wrapper}`);
+
+            // IMPORTANT: Use template literal to preserve backslashes
+            const latexText = `${wrapper}${latexCode}${wrapper}`;
+            console.log('[LaTeX] Converted to:', latexText);
+
+            // Create text node with preserved LaTeX
+            const textNode = document.createTextNode(latexText);
             katexElement.parentNode.replaceChild(textNode, katexElement);
+          }
+        });
+
+        // Method 2: Try finding .katex elements with data attributes (alternative)
+        const katexElements = contentArea.querySelectorAll('.katex[data-latex], .katex-mathml, mjx-container');
+        console.log(`[LaTeX] Found ${katexElements.length} alternative math elements`);
+
+        katexElements.forEach(element => {
+          const latex = element.getAttribute('data-latex') || element.getAttribute('data-expr');
+          if (latex) {
+            console.log('[LaTeX] Found from attribute:', latex);
+            const isBlock = element.classList.contains('katex-display') || element.classList.contains('display');
+            const wrapper = isBlock ? '$$' : '$';
+            const textNode = document.createTextNode(`${wrapper}${latex}${wrapper}`);
+            element.parentNode.replaceChild(textNode, element);
           }
         });
 
@@ -635,6 +729,9 @@ function addExportButtonsToMessage(messageElement, platform) {
       } else {
         content = htmlToMarkdown(contentElement).trim();
       }
+
+      // Normalize LaTeX for better Word compatibility
+      content = normalizeLatexForWord(content);
 
       // Debug: Log extracted markdown
       console.log('=== Extracted Markdown ===');
