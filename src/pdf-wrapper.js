@@ -5,7 +5,6 @@
 
 import katex from 'katex';
 import { jsPDF } from 'jspdf';
-import { toPng } from 'html-to-image';
 import { marked } from 'marked';
 import 'katex/dist/katex.min.css';
 
@@ -62,214 +61,16 @@ class PdfConverterBundled {
   }
 
   /**
-   * Export content as PDF using jsPDF + html-to-image (PNG with high quality)
+   * Export content as PDF using jsPDF native text API (text-based, not image)
    * @param {string} markdown - Markdown content with LaTeX formulas
    * @returns {Promise<void>}
    */
   async exportToPdf(markdown) {
     try {
-      console.log('[PDF] Starting PDF export');
+      console.log('[PDF] Starting text-based PDF export');
       console.log('[PDF] Markdown length:', markdown.length);
 
-      // Step 1: Convert markdown to HTML with KaTeX
-      const htmlContent = await this.markdownToHtmlWithKatex(markdown);
-
-      // Step 2: Create styled container
-      const element = document.createElement('div');
-      element.innerHTML = htmlContent;
-      element.id = 'pdf-export-content';
-
-      // Apply comprehensive styles
-      // Position off-screen but keep in DOM for proper rendering
-      // Convert A4 210mm width to pixels: 210mm = 793.7px at 96 DPI
-      element.style.cssText = `
-        position: absolute;
-        left: -10000px;
-        top: 0;
-        width: 794px;
-        padding: 57px;
-        font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-        font-size: 16px;
-        line-height: 1.8;
-        color: #333;
-        background: white;
-        box-sizing: border-box;
-        visibility: visible;
-        opacity: 1;
-      `;
-
-      // Step 3: Inject styles for better PDF rendering
-      const styleEl = document.createElement('style');
-      styleEl.id = 'pdf-export-styles';
-      styleEl.textContent = `
-        #pdf-export-content h1 {
-          font-size: 32px;
-          margin-top: 20px;
-          margin-bottom: 15px;
-          font-weight: bold;
-          color: #1a1a1a;
-          border-bottom: 2px solid #2563eb;
-          padding-bottom: 10px;
-        }
-        #pdf-export-content h2 {
-          font-size: 24px;
-          margin-top: 18px;
-          margin-bottom: 12px;
-          font-weight: bold;
-          color: #2563eb;
-        }
-        #pdf-export-content h3 {
-          font-size: 19px;
-          margin-top: 15px;
-          margin-bottom: 10px;
-          font-weight: bold;
-          color: #333;
-        }
-        #pdf-export-content p {
-          margin-bottom: 12px;
-          text-align: justify;
-        }
-        #pdf-export-content strong {
-          font-weight: bold;
-        }
-        #pdf-export-content em {
-          font-style: italic;
-        }
-        #pdf-export-content ul, #pdf-export-content ol {
-          margin-left: 30px;
-          margin-bottom: 12px;
-        }
-        #pdf-export-content li {
-          margin-bottom: 6px;
-        }
-        #pdf-export-content table {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 15px 0;
-        }
-        #pdf-export-content th {
-          background: #f0f0f0;
-          padding: 10px;
-          border: 1px solid #ddd;
-          font-weight: bold;
-          text-align: left;
-        }
-        #pdf-export-content td {
-          padding: 10px;
-          border: 1px solid #ddd;
-        }
-        #pdf-export-content code {
-          background: #f5f5f5;
-          padding: 2px 6px;
-          border-radius: 3px;
-          font-family: 'Courier New', 'Monaco', monospace;
-          font-size: 11pt;
-        }
-        #pdf-export-content pre {
-          background: #f5f5f5;
-          padding: 15px;
-          border-radius: 5px;
-          overflow-x: auto;
-          margin: 15px 0;
-        }
-        #pdf-export-content pre code {
-          background: none;
-          padding: 0;
-        }
-        #pdf-export-content .math-block {
-          display: flex;
-          justify-content: center;
-          margin: 20px 0;
-          padding: 15px;
-          background: #f9f9f9;
-          border-radius: 4px;
-        }
-        #pdf-export-content .math-inline {
-          display: inline;
-          margin: 0 2px;
-        }
-        #pdf-export-content .math-block-error {
-          color: #d32f2f;
-          background: #ffebee;
-          padding: 10px;
-          border-radius: 4px;
-          margin: 10px 0;
-          font-family: monospace;
-        }
-        #pdf-export-content blockquote {
-          border-left: 4px solid #2563eb;
-          padding-left: 15px;
-          margin: 15px 0;
-          color: #555;
-          font-style: italic;
-        }
-        #pdf-export-content hr {
-          border: none;
-          border-top: 2px solid #ddd;
-          margin: 20px 0;
-        }
-        #pdf-export-content .katex {
-          font-size: 1.1em;
-          -webkit-font-smoothing: antialiased;
-          -moz-osx-font-smoothing: grayscale;
-          font-smooth: always;
-        }
-        #pdf-export-content .katex-display {
-          margin: 1em 0;
-        }
-        #pdf-export-content .katex * {
-          -webkit-font-smoothing: antialiased;
-          -moz-osx-font-smoothing: grayscale;
-        }
-      `;
-
-      document.head.appendChild(styleEl);
-      document.body.appendChild(element);
-
-      console.log('[PDF] Waiting for fonts to load');
-
-      // Wait for fonts to be fully loaded
-      await document.fonts.ready;
-
-      // Force layout recalculation to ensure fonts are applied
-      element.offsetHeight;
-
-      // Additional delay to ensure KaTeX fonts are rendered
-      // Increased from 500ms to 2000ms for better font rendering
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Check if KaTeX fonts are actually loaded
-      const katexElements = element.querySelectorAll('.katex');
-      console.log('[PDF] Found', katexElements.length, 'KaTeX elements');
-
-      console.log('[PDF] Rendering HTML to PNG with maximum quality');
-
-      // Step 4: Convert HTML to PNG with highest quality settings
-      console.log('[PDF] Element dimensions:', element.offsetWidth, 'x', element.offsetHeight);
-      console.log('[PDF] Element scroll dimensions:', element.scrollWidth, 'x', element.scrollHeight);
-
-      const pngDataUrl = await toPng(element, {
-        quality: 1.0,
-        backgroundColor: '#ffffff',
-        width: element.scrollWidth,
-        height: element.scrollHeight,
-        pixelRatio: 4, // Maximum quality - 4x resolution for crisp text
-        cacheBust: true,
-        skipAutoScale: false,
-        canvasWidth: element.scrollWidth * 4,
-        canvasHeight: element.scrollHeight * 4,
-      });
-
-      console.log('[PDF] PNG created, generating PDF');
-      console.log('[PDF] PNG data URL length:', pngDataUrl.length);
-
-      // Check if PNG is empty
-      if (!pngDataUrl || pngDataUrl.length < 100) {
-        throw new Error('PNG oluşturulamadı - içerik render edilemedi');
-      }
-
-      // Step 5: Create PDF from PNG (high quality raster image)
-      const imgData = pngDataUrl;
+      // Create PDF document
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -277,33 +78,163 @@ class PdfConverterBundled {
         compress: true,
       });
 
-      const imgWidth = 210; // A4 width in mm
+      // Page settings
+      const pageWidth = 210; // A4 width in mm
       const pageHeight = 297; // A4 height in mm
-      const imgHeight = (element.scrollHeight * imgWidth) / element.scrollWidth;
-      let heightLeft = imgHeight;
-      let position = 0;
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
+      let yPosition = margin;
 
-      // Add first page (using high-quality PNG)
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, '', 'FAST');
-      heightLeft -= pageHeight;
+      // Helper function to check if we need a new page
+      const checkNewPage = (requiredSpace) => {
+        if (yPosition + requiredSpace > pageHeight - margin) {
+          pdf.addPage();
+          yPosition = margin;
+          return true;
+        }
+        return false;
+      };
 
-      // Add remaining pages if content is longer than one page
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, '', 'FAST');
-        heightLeft -= pageHeight;
+      // Helper function to process inline LaTeX and formatting
+      const processInlineText = (text) => {
+        // Replace inline math $...$ with placeholder
+        return text.replace(/\$([^$\n]+)\$/g, (match, latex) => {
+          return `[${latex}]`; // Show formula in brackets
+        });
+      };
+
+      // Step 1: Process LaTeX formulas first
+      let processedMarkdown = markdown;
+
+      // Process block math ($$...$$)
+      processedMarkdown = processedMarkdown.replace(/\$\$\n?([\s\S]*?)\n?\$\$/g, (match, latex) => {
+        return `\n\n[BLOCK MATH: ${latex.trim()}]\n\n`;
+      });
+
+      // Step 2: Parse markdown into tokens
+      console.log('[PDF] Parsing markdown');
+      const tokens = marked.lexer(processedMarkdown);
+      console.log('[PDF] Found', tokens.length, 'tokens');
+
+      // Step 3: Render each token
+      for (const token of tokens) {
+        switch (token.type) {
+          case 'heading':
+            checkNewPage(15);
+            yPosition += 5; // Extra space before heading
+
+            // Set font size based on heading level
+            const headingSizes = { 1: 18, 2: 14, 3: 12, 4: 11, 5: 10, 6: 10 };
+            pdf.setFontSize(headingSizes[token.depth] || 12);
+            pdf.setFont('helvetica', 'bold');
+
+            const headingText = processInlineText(token.text);
+            const headingLines = pdf.splitTextToSize(headingText, contentWidth);
+            pdf.text(headingLines, margin, yPosition);
+            yPosition += headingLines.length * 7;
+            yPosition += 3; // Extra space after heading
+            break;
+
+          case 'paragraph':
+            checkNewPage(10);
+            pdf.setFontSize(11);
+            pdf.setFont('helvetica', 'normal');
+
+            const paraText = processInlineText(token.text);
+            const paraLines = pdf.splitTextToSize(paraText, contentWidth);
+            pdf.text(paraLines, margin, yPosition);
+            yPosition += paraLines.length * 5;
+            yPosition += 3;
+            break;
+
+          case 'code':
+            checkNewPage(15);
+            pdf.setFontSize(9);
+            pdf.setFont('courier', 'normal');
+            pdf.setFillColor(245, 245, 245);
+
+            const codeLines = token.text.split('\n');
+            const codeHeight = codeLines.length * 4.5 + 6;
+
+            if (yPosition + codeHeight > pageHeight - margin) {
+              pdf.addPage();
+              yPosition = margin;
+            }
+
+            // Draw background
+            pdf.rect(margin, yPosition - 3, contentWidth, codeHeight, 'F');
+
+            // Draw code
+            for (const line of codeLines) {
+              pdf.text(line || ' ', margin + 2, yPosition);
+              yPosition += 4.5;
+            }
+            yPosition += 6;
+            break;
+
+          case 'list':
+            checkNewPage(10);
+            pdf.setFontSize(11);
+            pdf.setFont('helvetica', 'normal');
+
+            for (let i = 0; i < token.items.length; i++) {
+              const item = token.items[i];
+              const bullet = token.ordered ? `${i + 1}. ` : '• ';
+              const itemText = processInlineText(item.text);
+              const itemLines = pdf.splitTextToSize(bullet + itemText, contentWidth - 5);
+
+              checkNewPage(itemLines.length * 5);
+              pdf.text(itemLines, margin + 5, yPosition);
+              yPosition += itemLines.length * 5;
+            }
+            yPosition += 3;
+            break;
+
+          case 'blockquote':
+            checkNewPage(10);
+            pdf.setFontSize(11);
+            pdf.setFont('helvetica', 'italic');
+            pdf.setTextColor(85, 85, 85);
+
+            const quoteText = processInlineText(token.text);
+            const quoteLines = pdf.splitTextToSize(quoteText, contentWidth - 8);
+
+            // Draw left border
+            pdf.setDrawColor(37, 99, 235);
+            pdf.setLineWidth(1);
+            pdf.line(margin, yPosition - 2, margin, yPosition + quoteLines.length * 5);
+
+            pdf.text(quoteLines, margin + 5, yPosition);
+            yPosition += quoteLines.length * 5;
+            yPosition += 3;
+
+            pdf.setTextColor(0, 0, 0); // Reset color
+            break;
+
+          case 'hr':
+            checkNewPage(5);
+            pdf.setDrawColor(200, 200, 200);
+            pdf.setLineWidth(0.5);
+            pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+            yPosition += 5;
+            break;
+
+          case 'space':
+            yPosition += 2;
+            break;
+
+          default:
+            // For other token types, just add some space
+            console.log('[PDF] Unhandled token type:', token.type);
+            yPosition += 2;
+        }
       }
 
-      // Step 6: Save PDF
+      // Step 4: Save PDF
       const filename = `chatgpt-export-${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(filename);
 
-      console.log('[PDF] PDF generated successfully');
-
-      // Step 7: Cleanup
-      document.body.removeChild(element);
-      document.head.removeChild(styleEl);
+      console.log('[PDF] Text-based PDF generated successfully');
 
     } catch (error) {
       console.error('[PDF] Export failed:', error);
