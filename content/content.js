@@ -167,6 +167,54 @@ function normalizeLatexForWord(markdown) {
 }
 
 /**
+ * Convert HTML table to Markdown table format
+ * @param {HTMLElement} tableElement - HTML table element
+ * @returns {string} - Markdown table string
+ */
+function tableToMarkdown(tableElement) {
+  const rows = [];
+
+  // Get all rows (including thead and tbody)
+  const allRows = tableElement.querySelectorAll('tr');
+
+  if (allRows.length === 0) {
+    return '';
+  }
+
+  // Process each row
+  allRows.forEach((tr, rowIndex) => {
+    const cells = tr.querySelectorAll('th, td');
+    const cellTexts = Array.from(cells).map(cell => {
+      // Clean cell text and trim
+      return cell.textContent.trim().replace(/\|/g, '\\|'); // Escape pipes in cell content
+    });
+
+    if (cellTexts.length > 0) {
+      rows.push(cellTexts);
+    }
+
+    // Add separator after first row (header row)
+    if (rowIndex === 0 && cellTexts.length > 0) {
+      const separator = cellTexts.map(() => '---');
+      rows.push(separator);
+    }
+  });
+
+  if (rows.length === 0) {
+    return '';
+  }
+
+  // Build markdown table
+  let markdown = '\n';
+  rows.forEach(row => {
+    markdown += '| ' + row.join(' | ') + ' |\n';
+  });
+  markdown += '\n';
+
+  return markdown;
+}
+
+/**
  * Convert HTML element to Markdown
  * @param {HTMLElement} element - HTML element to convert
  * @returns {string} - Markdown string
@@ -261,8 +309,8 @@ function htmlToMarkdown(element) {
           markdown += lines.map(line => `> ${line}`).join('\n') + '\n\n';
           break;
         case 'table':
-          // Basic table support - can be enhanced
-          markdown += '\n' + node.outerHTML + '\n\n'; // Keep as HTML for now
+          // Convert HTML table to Markdown table format
+          markdown += tableToMarkdown(node);
           break;
         default:
           // Recursively process other elements
