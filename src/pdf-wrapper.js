@@ -5,7 +5,7 @@
 
 import katex from 'katex';
 import { jsPDF } from 'jspdf';
-import { toSvg } from 'html-to-image';
+import { toPng } from 'html-to-image';
 import { marked } from 'marked';
 import 'katex/dist/katex.min.css';
 
@@ -62,7 +62,7 @@ class PdfConverterBundled {
   }
 
   /**
-   * Export content as PDF using jsPDF + html-to-image (SVG)
+   * Export content as PDF using jsPDF + html-to-image (PNG with high quality)
    * @param {string} markdown - Markdown content with LaTeX formulas
    * @returns {Promise<void>}
    */
@@ -242,32 +242,34 @@ class PdfConverterBundled {
       const katexElements = element.querySelectorAll('.katex');
       console.log('[PDF] Found', katexElements.length, 'KaTeX elements');
 
-      console.log('[PDF] Rendering HTML to SVG with vector quality');
+      console.log('[PDF] Rendering HTML to PNG with maximum quality');
 
-      // Step 4: Convert HTML to SVG with highest quality settings
+      // Step 4: Convert HTML to PNG with highest quality settings
       console.log('[PDF] Element dimensions:', element.offsetWidth, 'x', element.offsetHeight);
       console.log('[PDF] Element scroll dimensions:', element.scrollWidth, 'x', element.scrollHeight);
 
-      const svgDataUrl = await toSvg(element, {
+      const pngDataUrl = await toPng(element, {
         quality: 1.0,
         backgroundColor: '#ffffff',
         width: element.scrollWidth,
         height: element.scrollHeight,
-        pixelRatio: 1, // SVG doesn't need high pixel ratio
+        pixelRatio: 4, // Maximum quality - 4x resolution for crisp text
         cacheBust: true,
-        fontEmbedCSS: '', // Let it embed fonts automatically
+        skipAutoScale: false,
+        canvasWidth: element.scrollWidth * 4,
+        canvasHeight: element.scrollHeight * 4,
       });
 
-      console.log('[PDF] SVG created, generating PDF');
-      console.log('[PDF] SVG data URL length:', svgDataUrl.length);
+      console.log('[PDF] PNG created, generating PDF');
+      console.log('[PDF] PNG data URL length:', pngDataUrl.length);
 
-      // Check if SVG is empty
-      if (!svgDataUrl || svgDataUrl.length < 100) {
-        throw new Error('SVG oluşturulamadı - içerik render edilemedi');
+      // Check if PNG is empty
+      if (!pngDataUrl || pngDataUrl.length < 100) {
+        throw new Error('PNG oluşturulamadı - içerik render edilemedi');
       }
 
-      // Step 5: Create PDF from SVG (vector format for perfect quality)
-      const imgData = svgDataUrl;
+      // Step 5: Create PDF from PNG (high quality raster image)
+      const imgData = pngDataUrl;
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -281,15 +283,15 @@ class PdfConverterBundled {
       let heightLeft = imgHeight;
       let position = 0;
 
-      // Add first page (using SVG for perfect vector quality)
-      pdf.addImage(imgData, 'SVG', 0, position, imgWidth, imgHeight, '', 'NONE');
+      // Add first page (using high-quality PNG)
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, '', 'FAST');
       heightLeft -= pageHeight;
 
       // Add remaining pages if content is longer than one page
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'SVG', 0, position, imgWidth, imgHeight, '', 'NONE');
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, '', 'FAST');
         heightLeft -= pageHeight;
       }
 
