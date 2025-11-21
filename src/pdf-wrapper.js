@@ -80,22 +80,22 @@ class PdfConverterBundled {
       element.id = 'pdf-export-content';
 
       // Apply comprehensive styles
-      // Keep element visible but behind other content for better font rendering
+      // Position off-screen but keep in DOM for proper rendering
+      // Convert A4 210mm width to pixels: 210mm = 793.7px at 96 DPI
       element.style.cssText = `
-        position: fixed;
-        left: 0;
+        position: absolute;
+        left: -10000px;
         top: 0;
-        width: 210mm;
-        padding: 15mm;
+        width: 794px;
+        padding: 57px;
         font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-        font-size: 12pt;
+        font-size: 16px;
         line-height: 1.8;
         color: #333;
         background: white;
         box-sizing: border-box;
-        z-index: -9999;
-        opacity: 0;
-        pointer-events: none;
+        visibility: visible;
+        opacity: 1;
       `;
 
       // Step 3: Inject styles for better PDF rendering
@@ -103,7 +103,7 @@ class PdfConverterBundled {
       styleEl.id = 'pdf-export-styles';
       styleEl.textContent = `
         #pdf-export-content h1 {
-          font-size: 24pt;
+          font-size: 32px;
           margin-top: 20px;
           margin-bottom: 15px;
           font-weight: bold;
@@ -112,14 +112,14 @@ class PdfConverterBundled {
           padding-bottom: 10px;
         }
         #pdf-export-content h2 {
-          font-size: 18pt;
+          font-size: 24px;
           margin-top: 18px;
           margin-bottom: 12px;
           font-weight: bold;
           color: #2563eb;
         }
         #pdf-export-content h3 {
-          font-size: 14pt;
+          font-size: 19px;
           margin-top: 15px;
           margin-bottom: 10px;
           font-weight: bold;
@@ -245,19 +245,34 @@ class PdfConverterBundled {
       console.log('[PDF] Rendering HTML to canvas with high quality');
 
       // Step 4: Convert HTML to canvas with highest quality settings
+      console.log('[PDF] Element dimensions:', element.offsetWidth, 'x', element.offsetHeight);
+      console.log('[PDF] Element scroll dimensions:', element.scrollWidth, 'x', element.scrollHeight);
+
       const canvas = await html2canvas(element, {
         scale: 4, // Maximum quality for crisp text and math formulas
         useCORS: true,
         logging: true, // Enable logging to debug font issues
         allowTaint: true,
         backgroundColor: '#ffffff',
+        width: element.scrollWidth,
+        height: element.scrollHeight,
         windowWidth: element.scrollWidth,
         windowHeight: element.scrollHeight,
+        x: 0,
+        y: 0,
+        scrollX: 0,
+        scrollY: 0,
         foreignObjectRendering: false, // Use traditional rendering for better compatibility
         imageTimeout: 0, // No timeout for image loading
       });
 
       console.log('[PDF] Canvas created, generating PDF');
+      console.log('[PDF] Canvas dimensions:', canvas.width, 'x', canvas.height);
+
+      // Check if canvas is empty
+      if (canvas.width === 0 || canvas.height === 0) {
+        throw new Error('Canvas boyutu sıfır - içerik render edilemedi');
+      }
 
       // Step 5: Create PDF from canvas using PNG (lossless)
       const imgData = canvas.toDataURL('image/png'); // Changed from JPEG to PNG
