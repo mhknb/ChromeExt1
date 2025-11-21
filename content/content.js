@@ -780,11 +780,34 @@ function addExportButtonsToMessage(messageElement, platform) {
       let content;
       const contentArea = contentElement.querySelector(selectors.content);
       if (contentArea) {
+        // Clone content area to avoid modifying original
+        const contentClone = contentArea.cloneNode(true);
+
+        // Remove ALL button containers and action elements (ours and other extensions)
+        const buttonsToRemove = contentClone.querySelectorAll(
+          '.ai-export-buttons, ' +           // Our buttons
+          'button, ' +                        // All buttons
+          '[role="button"], ' +               // Button-like elements
+          '.flex.gap-1, ' +                   // ChatGPT's button container
+          '.flex.items-center.gap-1, ' +      // Another button container pattern
+          '[class*="button"], ' +             // Any class with "button"
+          '[class*="action"], ' +             // Any class with "action"
+          'svg:only-child'                    // Standalone icons
+        );
+
+        buttonsToRemove.forEach(btn => {
+          // Only remove if it's not inside the actual message content
+          const parent = btn.parentElement;
+          if (parent && !parent.closest('p, li, blockquote, pre, code')) {
+            btn.remove();
+          }
+        });
+
         // Matematiksel formülleri LaTeX formatında koru
         // ChatGPT KaTeX annotation'larını bul ve işle
 
         // Method 1: Try MathML annotation (standard KaTeX output)
-        const latexAnnotations = contentArea.querySelectorAll('annotation[encoding="application/x-tex"]');
+        const latexAnnotations = contentClone.querySelectorAll('annotation[encoding="application/x-tex"]');
         console.log(`[LaTeX] Found ${latexAnnotations.length} MathML annotations`);
 
         latexAnnotations.forEach(annotation => {
@@ -812,7 +835,7 @@ function addExportButtonsToMessage(messageElement, platform) {
         });
 
         // Method 2: Try finding .katex elements with data attributes (alternative)
-        const katexElements = contentArea.querySelectorAll('.katex[data-latex], .katex-mathml, mjx-container');
+        const katexElements = contentClone.querySelectorAll('.katex[data-latex], .katex-mathml, mjx-container');
         console.log(`[LaTeX] Found ${katexElements.length} alternative math elements`);
 
         katexElements.forEach(element => {
@@ -821,13 +844,13 @@ function addExportButtonsToMessage(messageElement, platform) {
             console.log('[LaTeX] Found from attribute:', latex);
             const isBlock = element.classList.contains('katex-display') || element.classList.contains('display');
             const wrapper = isBlock ? '$$' : '$';
-            const textNode = document.createTextNode(`${wrapper}${latex}${wrapper}`);
+            const textNode = document.createTextNode(wrapper + latex + wrapper);
             element.parentNode.replaceChild(textNode, element);
           }
         });
 
         // Convert HTML to Markdown preserving formatting
-        content = htmlToMarkdown(contentArea).trim();
+        content = htmlToMarkdown(contentClone).trim();
       } else {
         content = htmlToMarkdown(contentElement).trim();
       }
