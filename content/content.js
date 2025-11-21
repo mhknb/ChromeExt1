@@ -886,8 +886,11 @@ function addExportButtonsToMessage(messageElement, platform) {
     });
   });
 
-  // Butonları ekle
-  targetContainer.appendChild(buttonsContainer);
+  // Ensure message element has position: relative for absolute positioning
+  messageElement.style.position = 'relative';
+
+  // Add buttons to message element (not targetContainer) for top-right positioning
+  messageElement.appendChild(buttonsContainer);
 
   // Duplicate eklemeyi önlemek için flag
   messageElement.setAttribute('data-export-buttons-added', 'true');
