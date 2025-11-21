@@ -80,9 +80,10 @@ class PdfConverterBundled {
       element.id = 'pdf-export-content';
 
       // Apply comprehensive styles
+      // Keep element visible but behind other content for better font rendering
       element.style.cssText = `
-        position: absolute;
-        left: -9999px;
+        position: fixed;
+        left: 0;
         top: 0;
         width: 210mm;
         padding: 15mm;
@@ -92,6 +93,9 @@ class PdfConverterBundled {
         color: #333;
         background: white;
         box-sizing: border-box;
+        z-index: -9999;
+        opacity: 0;
+        pointer-events: none;
       `;
 
       // Step 3: Inject styles for better PDF rendering
@@ -206,9 +210,16 @@ class PdfConverterBundled {
         }
         #pdf-export-content .katex {
           font-size: 1.1em;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          font-smooth: always;
         }
         #pdf-export-content .katex-display {
           margin: 1em 0;
+        }
+        #pdf-export-content .katex * {
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
         }
       `;
 
@@ -220,20 +231,30 @@ class PdfConverterBundled {
       // Wait for fonts to be fully loaded
       await document.fonts.ready;
 
+      // Force layout recalculation to ensure fonts are applied
+      element.offsetHeight;
+
       // Additional delay to ensure KaTeX fonts are rendered
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Increased from 500ms to 2000ms for better font rendering
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Check if KaTeX fonts are actually loaded
+      const katexElements = element.querySelectorAll('.katex');
+      console.log('[PDF] Found', katexElements.length, 'KaTeX elements');
 
       console.log('[PDF] Rendering HTML to canvas with high quality');
 
-      // Step 4: Convert HTML to canvas with higher quality settings
+      // Step 4: Convert HTML to canvas with highest quality settings
       const canvas = await html2canvas(element, {
-        scale: 3, // Increased from 2 to 3 for better quality
+        scale: 4, // Maximum quality for crisp text and math formulas
         useCORS: true,
-        logging: false,
+        logging: true, // Enable logging to debug font issues
         allowTaint: true,
         backgroundColor: '#ffffff',
         windowWidth: element.scrollWidth,
         windowHeight: element.scrollHeight,
+        foreignObjectRendering: false, // Use traditional rendering for better compatibility
+        imageTimeout: 0, // No timeout for image loading
       });
 
       console.log('[PDF] Canvas created, generating PDF');
