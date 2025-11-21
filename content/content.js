@@ -787,6 +787,25 @@ function addExportButtonsToMessage(messageElement, platform) {
         const ourButtons = contentClone.querySelectorAll('.ai-export-buttons');
         ourButtons.forEach(btn => btn.remove());
 
+        // Remove elements containing export-related text (other extensions' buttons/labels)
+        const exportTexts = Array.from(contentClone.querySelectorAll('*')).filter(el => {
+          const text = el.textContent.trim();
+          return (
+            text.match(/^Export response as/i) ||
+            text.match(/^Download as/i) ||
+            text.match(/^Save as/i) ||
+            text.match(/^Export to (Word|PDF|DOCX)/i) ||
+            (text.includes('Export') && text.includes('file') && text.length < 100)
+          );
+        });
+
+        exportTexts.forEach(el => {
+          // Only remove leaf nodes or nodes with very little content
+          if (!el.querySelector('p, li, h1, h2, h3, h4, h5, h6, blockquote, pre')) {
+            el.remove();
+          }
+        });
+
         // Remove other extension buttons that are direct children or in obvious button containers
         // Look for button containers at the TOP level (not nested in content)
         const topLevelButtons = contentClone.querySelectorAll(':scope > button, :scope > [role="button"], :scope > .flex > button');
