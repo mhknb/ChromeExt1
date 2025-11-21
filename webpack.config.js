@@ -88,6 +88,10 @@ module.exports = [
           use: ['style-loader', 'css-loader']
         }
       ]
+    },
+    optimization: {
+      splitChunks: false,
+      runtimeChunk: false
     }
   }
 ];
