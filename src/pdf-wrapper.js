@@ -330,8 +330,13 @@ class PdfConverterBundled {
 
           case 'table':
             checkNewPage(20);
+
+            // Reset all colors and styles for clean table rendering
             pdf.setFontSize(9);
             pdf.setFont('NotoSerif', 'normal');
+            pdf.setTextColor(0, 0, 0); // Ensure text is black
+            pdf.setFillColor(255, 255, 255); // Reset fill to white
+            pdf.setDrawColor(0, 0, 0); // Reset draw to black
 
             const table = token;
             const colCount = table.header.length;
