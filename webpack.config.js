@@ -57,6 +57,7 @@ module.exports = [
       libraryTarget: 'window',
       libraryExport: 'default'
     },
+    target: ['web', 'es5'],
     resolve: {
       extensions: ['.js', '.mjs'],
       fallback: {
@@ -95,12 +96,14 @@ module.exports = [
       minimize: true,
       usedExports: false,
       sideEffects: false,
-      concatenateModules: true
+      concatenateModules: true,
+      innerGraph: false,
+      mangleExports: false
     },
     performance: {
       hints: false,
-      maxEntrypointSize: 512000,
-      maxAssetSize: 512000
+      maxEntrypointSize: 2048000,
+      maxAssetSize: 2048000
     }
   }
 ];
