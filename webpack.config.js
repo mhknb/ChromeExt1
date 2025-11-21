@@ -107,10 +107,10 @@ module.exports = [
     optimization: {
       splitChunks: false,
       runtimeChunk: false,
-      minimize: true,
+      minimize: false,
       usedExports: false,
       sideEffects: false,
-      concatenateModules: true,
+      concatenateModules: false,
       innerGraph: false,
       mangleExports: false
     },
