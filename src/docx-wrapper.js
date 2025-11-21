@@ -2,7 +2,9 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import { toDocx } from 'mdast2docx';
+import { toDocx } from '@m2d/core';
+import { mathPlugin } from '@m2d/math';
+import { tablePlugin } from '@m2d/table';
 
 class DocxConverterBundled {
   constructor() {
@@ -10,7 +12,7 @@ class DocxConverterBundled {
   }
 
   /**
-   * Convert markdown to DOCX using mdast2docx
+   * Convert markdown to DOCX using @m2d/core with math support
    * @param {string} markdown - Markdown content (with LaTeX as $...$ or $$...$$)
    * @returns {Promise<Blob>} - DOCX blob
    */
@@ -24,11 +26,11 @@ class DocxConverterBundled {
 
       const mdast = processor.parse(markdown);
 
-      // 2. Transform math nodes to text nodes
-      // mdast2docx doesn't support math nodes, so we convert them to text
-      this.transformMathNodes(mdast);
+      // Debug: Log MDAST to check math nodes
+      console.log('Parsed MDAST:', JSON.stringify(mdast, null, 2));
 
-      // 3. Convert MDAST to DOCX blob
+      // 2. Convert MDAST to DOCX blob with math plugin
+      // mathPlugin() converts LaTeX to Word native equation format
       const docxBlob = await toDocx(
         mdast,
         {
@@ -38,46 +40,19 @@ class DocxConverterBundled {
           creator: 'AI Content Exporter'
         },
         {
-          // Section properties (optional)
-          // page size, margins, etc.
+          // Plugins for advanced features
+          plugins: [
+            mathPlugin(),    // LaTeX → Word MathRun (native equations)
+            tablePlugin(),   // Enhanced table support
+          ]
         },
         'blob'  // Output format: 'blob' for browser
       );
 
       return docxBlob;
     } catch (error) {
-      console.error('mdast2docx conversion failed:', error);
+      console.error('@m2d/core conversion failed:', error);
       throw new Error('DOCX dönüşümü başarısız: ' + error.message);
-    }
-  }
-
-  /**
-   * Transform math and inlineMath nodes to text nodes
-   * This is necessary because mdast2docx doesn't support math nodes
-   * @param {Object} node - MDAST node
-   */
-  transformMathNodes(node) {
-    if (!node) return;
-
-    // Handle math nodes (block equations $$...$$)
-    if (node.type === 'math') {
-      node.type = 'text';
-      node.value = `$$${node.value}$$`;
-      delete node.meta;
-      return;
-    }
-
-    // Handle inlineMath nodes (inline equations $...$)
-    if (node.type === 'inlineMath') {
-      node.type = 'text';
-      node.value = `$${node.value}$`;
-      delete node.meta;
-      return;
-    }
-
-    // Recursively process children
-    if (node.children && Array.isArray(node.children)) {
-      node.children.forEach(child => this.transformMathNodes(child));
     }
   }
 }
