@@ -1,5 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = [
   // DOCX Converter Bundle
@@ -77,6 +78,9 @@ module.exports = [
       new webpack.ProvidePlugin({
         process: 'process/browser',
         Buffer: ['buffer', 'Buffer'],
+      }),
+      new MiniCssExtractPlugin({
+        filename: 'katex.css'
       })
     ],
     module: {
@@ -89,7 +93,7 @@ module.exports = [
         },
         {
           test: /\.css$/,
-          use: ['style-loader', 'css-loader']
+          use: [MiniCssExtractPlugin.loader, 'css-loader']
         },
         {
           test: /\.(woff|woff2|ttf|eot)$/,

@@ -37,7 +37,7 @@
         "lib/pdf-converter-bundled.js",
         "content/content.js"
       ],
-      "css": ["content/content.css"],
+      "css": ["content/content.css", "lib/katex.css"],
       "run_at": "document_end"
     }
   ],
@@ -51,7 +51,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["lib/*.js", "lib/fonts/*.woff", "lib/fonts/*.woff2", "lib/fonts/*.ttf"],
+      "resources": ["lib/*.js", "lib/*.css", "lib/fonts/*.woff", "lib/fonts/*.woff2", "lib/fonts/*.ttf"],
       "matches": [
         "https://chat.openai.com/*",
         "https://chatgpt.com/*",
