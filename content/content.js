@@ -18,7 +18,13 @@ function normalizeLatexForWord(markdown) {
 
   // Helper function to wrap symbol in $...$ if not already in math mode
   function wrapInMath(text, unicodeSymbol, latexCommand) {
-    return text.replace(new RegExp(unicodeSymbol, 'g'), (match, offset) => {
+    // Escape special regex characters in Unicode symbol
+    const escapedSymbol = unicodeSymbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Track if any replacements were made
+    let replacementCount = 0;
+
+    const result = text.replace(new RegExp(escapedSymbol, 'g'), (match, offset) => {
       // Check if already inside $...$ or $$...$$
       const before = text.substring(0, offset);
       const after = text.substring(offset);
@@ -39,8 +45,15 @@ function normalizeLatexForWord(markdown) {
       }
 
       // Not in math mode - wrap with $...$
+      replacementCount++;
       return '$' + latexCommand + '$';
     });
+
+    if (replacementCount > 0) {
+      console.log(`[wrapInMath] Wrapped ${replacementCount} instances of "${unicodeSymbol}" → "$${latexCommand}$"`);
+    }
+
+    return result;
   }
 
   // Comparison operators
