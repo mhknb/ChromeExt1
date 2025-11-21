@@ -13,98 +13,205 @@ function normalizeLatexForWord(markdown) {
   console.log('[Normalize] Input has $ signs:', result.includes('$'));
   console.log('[Normalize] Input sample:', result.substring(0, 300));
 
-  // STEP 1: Convert Unicode math symbols to LaTeX
-  // ONLY when annotation extraction failed and we have Unicode instead of LaTeX
-  result = result
-    // Comparison operators
-    .replace(/≤/g, '\\leq')
-    .replace(/≥/g, '\\geq')
-    .replace(/≠/g, '\\neq')
-    .replace(/≈/g, '\\approx')
-    .replace(/≡/g, '\\equiv')
+  // STEP 1: Convert Unicode math symbols to LaTeX WITH inline math delimiters
+  // This handles cases where annotation extraction failed
 
-    // Set operations
-    .replace(/⊆/g, '\\subseteq')
-    .replace(/⊇/g, '\\supseteq')
-    .replace(/⊂/g, '\\subset')
-    .replace(/⊃/g, '\\supset')
-    .replace(/∈/g, '\\in')
-    .replace(/∉/g, '\\notin')
-    .replace(/∪/g, '\\cup')
-    .replace(/∩/g, '\\cap')
-    .replace(/∅/g, '\\emptyset')
+  // Helper function to wrap symbol in $...$ if not already in math mode
+  function wrapInMath(text, unicodeSymbol, latexCommand) {
+    // Escape special regex characters in Unicode symbol
+    const escapedSymbol = unicodeSymbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    // Arithmetic
-    .replace(/×/g, '\\times')
-    .replace(/÷/g, '\\div')
-    .replace(/±/g, '\\pm')
-    .replace(/∓/g, '\\mp')
+    // Track if any replacements were made
+    let replacementCount = 0;
 
-    // Calculus & Analysis
-    .replace(/∞/g, '\\infty')
-    .replace(/∫/g, '\\int')
-    .replace(/∑/g, '\\sum')
-    .replace(/∏/g, '\\prod')
-    .replace(/√/g, '\\sqrt')
-    .replace(/∂/g, '\\partial')
-    .replace(/∇/g, '\\nabla')
+    const result = text.replace(new RegExp(escapedSymbol, 'g'), (match, offset) => {
+      // Check if already inside $...$ or $$...$$
+      const before = text.substring(0, offset);
+      const after = text.substring(offset);
 
-    // Greek letters (lowercase)
-    .replace(/α/g, '\\alpha')
-    .replace(/β/g, '\\beta')
-    .replace(/γ/g, '\\gamma')
-    .replace(/δ/g, '\\delta')
-    .replace(/ε/g, '\\epsilon')
-    .replace(/ζ/g, '\\zeta')
-    .replace(/η/g, '\\eta')
-    .replace(/θ/g, '\\theta')
-    .replace(/ι/g, '\\iota')
-    .replace(/κ/g, '\\kappa')
-    .replace(/λ/g, '\\lambda')
-    .replace(/μ/g, '\\mu')
-    .replace(/ν/g, '\\nu')
-    .replace(/ξ/g, '\\xi')
-    .replace(/π/g, '\\pi')
-    .replace(/ρ/g, '\\rho')
-    .replace(/σ/g, '\\sigma')
-    .replace(/τ/g, '\\tau')
-    .replace(/υ/g, '\\upsilon')
-    .replace(/φ/g, '\\phi')
-    .replace(/χ/g, '\\chi')
-    .replace(/ψ/g, '\\psi')
-    .replace(/ω/g, '\\omega')
+      // Count $ signs before this position
+      const dollarsBefore = (before.match(/\$/g) || []).length;
 
-    // Greek letters (uppercase)
-    .replace(/Γ/g, '\\Gamma')
-    .replace(/Δ/g, '\\Delta')
-    .replace(/Θ/g, '\\Theta')
-    .replace(/Λ/g, '\\Lambda')
-    .replace(/Ξ/g, '\\Xi')
-    .replace(/Π/g, '\\Pi')
-    .replace(/Σ/g, '\\Sigma')
-    .replace(/Φ/g, '\\Phi')
-    .replace(/Ψ/g, '\\Psi')
-    .replace(/Ω/g, '\\Omega')
+      // If odd number of $ before, we're inside math mode - don't wrap
+      if (dollarsBefore % 2 === 1) {
+        return latexCommand;
+      }
 
-    // Logic
-    .replace(/∀/g, '\\forall')
-    .replace(/∃/g, '\\exists')
-    .replace(/¬/g, '\\neg')
-    .replace(/∧/g, '\\wedge')
-    .replace(/∨/g, '\\vee')
-    .replace(/⇒/g, '\\Rightarrow')
-    .replace(/⇔/g, '\\Leftrightarrow')
-    .replace(/→/g, '\\rightarrow')
-    .replace(/←/g, '\\leftarrow');
+      // Check if inside $$...$$ block
+      const blockStart = before.lastIndexOf('$$');
+      const blockEnd = after.indexOf('$$');
+      if (blockStart !== -1 && blockEnd !== -1 && blockStart > before.lastIndexOf('$$', blockStart - 1)) {
+        return latexCommand;
+      }
+
+      // Not in math mode - wrap with $...$
+      replacementCount++;
+      return '$' + latexCommand + '$';
+    });
+
+    if (replacementCount > 0) {
+      console.log(`[wrapInMath] Wrapped ${replacementCount} instances of "${unicodeSymbol}" → "$${latexCommand}$"`);
+    }
+
+    return result;
+  }
+
+  // Comparison operators
+  result = wrapInMath(result, '≤', '\\leq');
+  result = wrapInMath(result, '≥', '\\geq');
+  result = wrapInMath(result, '≠', '\\neq');
+  result = wrapInMath(result, '≈', '\\approx');
+  result = wrapInMath(result, '≡', '\\equiv');
+
+  // Set operations
+  result = wrapInMath(result, '⊆', '\\subseteq');
+  result = wrapInMath(result, '⊇', '\\supseteq');
+  result = wrapInMath(result, '⊂', '\\subset');
+  result = wrapInMath(result, '⊃', '\\supset');
+  result = wrapInMath(result, '∈', '\\in');
+  result = wrapInMath(result, '∉', '\\notin');
+  result = wrapInMath(result, '∪', '\\cup');
+  result = wrapInMath(result, '∩', '\\cap');
+  result = wrapInMath(result, '∅', '\\emptyset');
+
+  // Arithmetic
+  result = wrapInMath(result, '×', '\\times');
+  result = wrapInMath(result, '÷', '\\div');
+  result = wrapInMath(result, '±', '\\pm');
+  result = wrapInMath(result, '∓', '\\mp');
+
+  // Calculus & Analysis
+  result = wrapInMath(result, '∞', '\\infty');
+  result = wrapInMath(result, '∫', '\\int');
+  result = wrapInMath(result, '∑', '\\sum');
+  result = wrapInMath(result, '∏', '\\prod');
+  result = wrapInMath(result, '√', '\\sqrt');
+  result = wrapInMath(result, '∂', '\\partial');
+  result = wrapInMath(result, '∇', '\\nabla');
+
+  // Greek letters (lowercase)
+  result = wrapInMath(result, 'α', '\\alpha');
+  result = wrapInMath(result, 'β', '\\beta');
+  result = wrapInMath(result, 'γ', '\\gamma');
+  result = wrapInMath(result, 'δ', '\\delta');
+  result = wrapInMath(result, 'ε', '\\varepsilon');  // variant epsilon (standard: ε)
+  result = wrapInMath(result, 'ϵ', '\\epsilon');     // lunate epsilon (curved: ϵ)
+  result = wrapInMath(result, 'ζ', '\\zeta');
+  result = wrapInMath(result, 'η', '\\eta');
+  result = wrapInMath(result, 'θ', '\\theta');       // standard theta (θ)
+  result = wrapInMath(result, 'ϑ', '\\vartheta');    // variant theta (ϑ)
+  result = wrapInMath(result, 'ι', '\\iota');
+  result = wrapInMath(result, 'κ', '\\kappa');       // standard kappa (κ)
+  result = wrapInMath(result, 'ϰ', '\\varkappa');    // variant kappa (ϰ)
+  result = wrapInMath(result, 'λ', '\\lambda');
+  result = wrapInMath(result, 'μ', '\\mu');
+  result = wrapInMath(result, 'ν', '\\nu');
+  result = wrapInMath(result, 'ξ', '\\xi');
+  result = wrapInMath(result, 'π', '\\pi');          // standard pi (π)
+  result = wrapInMath(result, 'ϖ', '\\varpi');       // variant pi (ϖ)
+  result = wrapInMath(result, 'ρ', '\\rho');         // standard rho (ρ)
+  result = wrapInMath(result, 'ϱ', '\\varrho');      // variant rho (ϱ)
+  result = wrapInMath(result, 'σ', '\\sigma');       // normal sigma (σ)
+  result = wrapInMath(result, 'ς', '\\varsigma');    // final sigma (ς)
+  result = wrapInMath(result, 'τ', '\\tau');
+  result = wrapInMath(result, 'υ', '\\upsilon');
+  result = wrapInMath(result, 'φ', '\\varphi');      // variant phi (straight: φ)
+  result = wrapInMath(result, 'ϕ', '\\phi');         // standard phi (loopy: ϕ)
+  result = wrapInMath(result, 'χ', '\\chi');
+  result = wrapInMath(result, 'ψ', '\\psi');
+  result = wrapInMath(result, 'ω', '\\omega');
+
+  // Greek letters (uppercase)
+  result = wrapInMath(result, 'Γ', '\\Gamma');
+  result = wrapInMath(result, 'Δ', '\\Delta');
+  result = wrapInMath(result, 'Θ', '\\Theta');
+  result = wrapInMath(result, 'Λ', '\\Lambda');
+  result = wrapInMath(result, 'Ξ', '\\Xi');
+  result = wrapInMath(result, 'Π', '\\Pi');
+  result = wrapInMath(result, 'Σ', '\\Sigma');
+  result = wrapInMath(result, 'Φ', '\\Phi');
+  result = wrapInMath(result, 'Ψ', '\\Psi');
+  result = wrapInMath(result, 'Ω', '\\Omega');
+
+  // Logic
+  result = wrapInMath(result, '∀', '\\forall');
+  result = wrapInMath(result, '∃', '\\exists');
+  result = wrapInMath(result, '¬', '\\neg');
+  result = wrapInMath(result, '∧', '\\wedge');
+  result = wrapInMath(result, '∨', '\\vee');
+  result = wrapInMath(result, '⇒', '\\Rightarrow');
+  result = wrapInMath(result, '⇔', '\\Leftrightarrow');
+  result = wrapInMath(result, '→', '\\rightarrow');
+  result = wrapInMath(result, '←', '\\leftarrow');
 
   // STEP 2: Normalize LaTeX short forms to long forms (Word compatibility)
-  // Only do this for comparison operators where Word prefers long form
-  result = result
-    .replace(/\\le\b/g, '\\leq')
-    .replace(/\\ge\b/g, '\\geq');
+  // Only do this INSIDE math mode
+  result = result.replace(/\$([^$]+)\$/g, (match, mathContent) => {
+    // Normalize inside inline math
+    const normalized = mathContent
+      .replace(/\\le\b/g, '\\leq')
+      .replace(/\\ge\b/g, '\\geq');
+    return '$' + normalized + '$';
+  });
+
+  result = result.replace(/\$\$([^$]+)\$\$/g, (match, mathContent) => {
+    // Normalize inside block math
+    const normalized = mathContent
+      .replace(/\\le\b/g, '\\leq')
+      .replace(/\\ge\b/g, '\\geq');
+    return '$$' + normalized + '$$';
+  });
 
   console.log('[Normalize] Output sample:', result.substring(0, 300));
   return result;
+}
+
+/**
+ * Convert HTML table to Markdown table format
+ * @param {HTMLElement} tableElement - HTML table element
+ * @returns {string} - Markdown table string
+ */
+function tableToMarkdown(tableElement) {
+  const rows = [];
+
+  // Get all rows (including thead and tbody)
+  const allRows = tableElement.querySelectorAll('tr');
+
+  if (allRows.length === 0) {
+    return '';
+  }
+
+  // Process each row
+  allRows.forEach((tr, rowIndex) => {
+    const cells = tr.querySelectorAll('th, td');
+    const cellTexts = Array.from(cells).map(cell => {
+      // Clean cell text and trim
+      return cell.textContent.trim().replace(/\|/g, '\\|'); // Escape pipes in cell content
+    });
+
+    if (cellTexts.length > 0) {
+      rows.push(cellTexts);
+    }
+
+    // Add separator after first row (header row)
+    if (rowIndex === 0 && cellTexts.length > 0) {
+      const separator = cellTexts.map(() => '---');
+      rows.push(separator);
+    }
+  });
+
+  if (rows.length === 0) {
+    return '';
+  }
+
+  // Build markdown table
+  let markdown = '\n';
+  rows.forEach(row => {
+    markdown += '| ' + row.join(' | ') + ' |\n';
+  });
+  markdown += '\n';
+
+  return markdown;
 }
 
 /**
@@ -202,8 +309,8 @@ function htmlToMarkdown(element) {
           markdown += lines.map(line => `> ${line}`).join('\n') + '\n\n';
           break;
         case 'table':
-          // Basic table support - can be enhanced
-          markdown += '\n' + node.outerHTML + '\n\n'; // Keep as HTML for now
+          // Convert HTML table to Markdown table format
+          markdown += tableToMarkdown(node);
           break;
         default:
           // Recursively process other elements
@@ -721,11 +828,53 @@ function addExportButtonsToMessage(messageElement, platform) {
       let content;
       const contentArea = contentElement.querySelector(selectors.content);
       if (contentArea) {
+        // Clone content area to avoid modifying original
+        const contentClone = contentArea.cloneNode(true);
+
+        // Remove only OUR export buttons - be very specific
+        const ourButtons = contentClone.querySelectorAll('.ai-export-buttons');
+        ourButtons.forEach(btn => btn.remove());
+
+        // Remove elements containing export-related text (other extensions' buttons/labels)
+        const exportTexts = Array.from(contentClone.querySelectorAll('*')).filter(el => {
+          const text = el.textContent.trim();
+          return (
+            text.match(/^Export response as/i) ||
+            text.match(/^Download as/i) ||
+            text.match(/^Save as/i) ||
+            text.match(/^Export to (Word|PDF|DOCX)/i) ||
+            (text.includes('Export') && text.includes('file') && text.length < 100)
+          );
+        });
+
+        exportTexts.forEach(el => {
+          // Only remove leaf nodes or nodes with very little content
+          if (!el.querySelector('p, li, h1, h2, h3, h4, h5, h6, blockquote, pre')) {
+            el.remove();
+          }
+        });
+
+        // Remove other extension buttons that are direct children or in obvious button containers
+        // Look for button containers at the TOP level (not nested in content)
+        const topLevelButtons = contentClone.querySelectorAll(':scope > button, :scope > [role="button"], :scope > .flex > button');
+        topLevelButtons.forEach(btn => btn.remove());
+
+        // Remove button containers that are siblings to content, not children
+        const buttonContainers = contentClone.querySelectorAll(':scope > .flex.gap-1:has(button), :scope > .flex.items-center:has(button)');
+        buttonContainers.forEach(container => {
+          // Only remove if it ONLY contains buttons/icons (no text content)
+          const textContent = container.textContent.trim();
+          const hasButtons = container.querySelectorAll('button, svg').length > 0;
+          if (hasButtons && textContent.length < 10) {
+            container.remove();
+          }
+        });
+
         // Matematiksel formülleri LaTeX formatında koru
         // ChatGPT KaTeX annotation'larını bul ve işle
 
         // Method 1: Try MathML annotation (standard KaTeX output)
-        const latexAnnotations = contentArea.querySelectorAll('annotation[encoding="application/x-tex"]');
+        const latexAnnotations = contentClone.querySelectorAll('annotation[encoding="application/x-tex"]');
         console.log(`[LaTeX] Found ${latexAnnotations.length} MathML annotations`);
 
         latexAnnotations.forEach(annotation => {
@@ -753,7 +902,7 @@ function addExportButtonsToMessage(messageElement, platform) {
         });
 
         // Method 2: Try finding .katex elements with data attributes (alternative)
-        const katexElements = contentArea.querySelectorAll('.katex[data-latex], .katex-mathml, mjx-container');
+        const katexElements = contentClone.querySelectorAll('.katex[data-latex], .katex-mathml, mjx-container');
         console.log(`[LaTeX] Found ${katexElements.length} alternative math elements`);
 
         katexElements.forEach(element => {
@@ -762,13 +911,13 @@ function addExportButtonsToMessage(messageElement, platform) {
             console.log('[LaTeX] Found from attribute:', latex);
             const isBlock = element.classList.contains('katex-display') || element.classList.contains('display');
             const wrapper = isBlock ? '$$' : '$';
-            const textNode = document.createTextNode(`${wrapper}${latex}${wrapper}`);
+            const textNode = document.createTextNode(wrapper + latex + wrapper);
             element.parentNode.replaceChild(textNode, element);
           }
         });
 
         // Convert HTML to Markdown preserving formatting
-        content = htmlToMarkdown(contentArea).trim();
+        content = htmlToMarkdown(contentClone).trim();
       } else {
         content = htmlToMarkdown(contentElement).trim();
       }
@@ -785,7 +934,7 @@ function addExportButtonsToMessage(messageElement, platform) {
     });
   });
 
-  // Butonları ekle
+  // Add buttons to target container (at the bottom, right-aligned)
   targetContainer.appendChild(buttonsContainer);
 
   // Duplicate eklemeyi önlemek için flag

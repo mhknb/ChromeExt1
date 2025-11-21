@@ -1,38 +1,34 @@
-/* Content script styles - Inline export buttons */
+/* Content script styles - Export buttons aligned to right */
 
 .ai-export-buttons {
   display: flex;
-  gap: 4px;
-  margin-top: 8px;
-  padding: 4px 0;
-  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 8px;
+  margin-top: 12px;
+  flex-wrap: nowrap;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .ai-export-buttons {
-    /* Removed border */
-  }
-}
+/* Dark mode support - no special styling needed for container */
 
 .ai-export-btn {
   padding: 6px;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   border-radius: 6px;
-  background: rgba(142, 142, 160, 0.2);
-  color: rgba(0, 0, 0, 0.6);
+  background: transparent;
+  color: #5d5bc9;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .ai-export-btn:hover {
-  background: rgba(142, 142, 160, 0.3);
-  color: rgba(0, 0, 0, 0.8);
+  background: rgba(93, 91, 201, 0.1);
+  color: #4a48b0;
 }
 
 .ai-export-btn:active {
@@ -46,13 +42,12 @@
 /* Dark mode button styles */
 @media (prefers-color-scheme: dark) {
   .ai-export-btn {
-    background: rgba(142, 142, 160, 0.2);
-    color: rgba(255, 255, 255, 0.7);
+    color: #8987e8;
   }
 
   .ai-export-btn:hover {
-    background: rgba(142, 142, 160, 0.3);
-    color: rgba(255, 255, 255, 0.9);
+    background: rgba(137, 135, 232, 0.15);
+    color: #a7a5ff;
   }
 }
 
@@ -84,23 +79,21 @@
 
 /* Success state */
 .ai-export-btn.success {
-  background: linear-gradient(to bottom, #10b981, #059669);
-  color: white;
-  border-color: #059669;
+  background: #10b981 !important;
+  color: white !important;
   animation: successPulse 0.4s ease;
 }
 
 @keyframes successPulse {
   0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  50% { transform: scale(1.1); }
   100% { transform: scale(1); }
 }
 
 /* Error state */
 .ai-export-btn.error {
-  background: linear-gradient(to bottom, #ef4444, #dc2626);
-  color: white;
-  border-color: #dc2626;
+  background: #ef4444 !important;
+  color: white !important;
   animation: errorShake 0.4s ease;
 }
 
@@ -110,24 +103,3 @@
   75% { transform: translateX(4px); }
 }
 
-/* Platform-specific adjustments */
-/* ChatGPT */
-[class*="ChatGPT"] .ai-export-buttons,
-[data-testid*="conversation"] .ai-export-buttons {
-  margin-top: 8px;
-}
-
-/* Claude */
-[class*="claude"] .ai-export-buttons {
-  margin-top: 10px;
-}
-
-/* Gemini */
-[class*="gemini"] .ai-export-buttons {
-  margin-top: 10px;
-}
-
-/* DeepSeek */
-[class*="deepseek"] .ai-export-buttons {
-  margin-top: 10px;
-}
