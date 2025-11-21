@@ -215,6 +215,7 @@ class PdfConverterBundled {
       const options = {
         margin: [15, 15, 15, 15],
         filename: `chatgpt-export-${new Date().toISOString().split('T')[0]}.pdf`,
+        enableLinks: false,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 2,
@@ -228,6 +229,8 @@ class PdfConverterBundled {
           format: 'a4',
           orientation: 'portrait',
           compress: true,
+          putOnlyUsedFonts: false,
+          userUnit: 1.0
         },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
@@ -235,7 +238,7 @@ class PdfConverterBundled {
       console.log('[PDF] Starting html2pdf conversion');
 
       // Step 5: Generate and download PDF
-      await html2pdf().set(options).from(element).save();
+      await html2pdf().set(options).from(element).toPdf().save();
 
       console.log('[PDF] PDF generated successfully');
 

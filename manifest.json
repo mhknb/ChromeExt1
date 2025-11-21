@@ -47,7 +47,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["lib/*.js", "lib/*.woff", "lib/*.woff2", "lib/*.ttf"],
+      "resources": ["lib/*.js", "lib/fonts/*.woff", "lib/fonts/*.woff2", "lib/fonts/*.ttf"],
       "matches": [
         "https://chat.openai.com/*",
         "https://chatgpt.com/*",
