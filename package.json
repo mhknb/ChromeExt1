@@ -1,6 +1,6 @@
 {
   "name": "chromeext1",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "**Reddit'te Tespit Edilen En Büyük Sorunları Çözen Chrome Extension**",
   "main": "index.js",
   "directories": {
