@@ -2,24 +2,28 @@
 
 /**
  * Normalize LaTeX for better Word compatibility
- * Fixes common LaTeX commands that Word's OMML engine prefers
- * Also converts Unicode math symbols back to LaTeX if annotation extraction failed
+ * Converts Unicode math symbols to LaTeX and normalizes short-form commands
  * @param {string} markdown - Markdown with LaTeX
  * @returns {string} - Normalized markdown
  */
 function normalizeLatexForWord(markdown) {
   let result = markdown;
 
-  // Debug: Check if we have any LaTeX in the input
+  // Debug: Check input
   console.log('[Normalize] Input has $ signs:', result.includes('$'));
   console.log('[Normalize] Input sample:', result.substring(0, 300));
 
-  // STEP 1: Convert Unicode math symbols to LaTeX (fallback if annotation extraction failed)
-  // This helps when KaTeX renders to Unicode but we don't have access to source LaTeX
+  // STEP 1: Convert Unicode math symbols to LaTeX
+  // ONLY when annotation extraction failed and we have Unicode instead of LaTeX
   result = result
+    // Comparison operators
     .replace(/≤/g, '\\leq')
     .replace(/≥/g, '\\geq')
     .replace(/≠/g, '\\neq')
+    .replace(/≈/g, '\\approx')
+    .replace(/≡/g, '\\equiv')
+
+    // Set operations
     .replace(/⊆/g, '\\subseteq')
     .replace(/⊇/g, '\\supseteq')
     .replace(/⊂/g, '\\subset')
@@ -28,9 +32,15 @@ function normalizeLatexForWord(markdown) {
     .replace(/∉/g, '\\notin')
     .replace(/∪/g, '\\cup')
     .replace(/∩/g, '\\cap')
+    .replace(/∅/g, '\\emptyset')
+
+    // Arithmetic
     .replace(/×/g, '\\times')
     .replace(/÷/g, '\\div')
     .replace(/±/g, '\\pm')
+    .replace(/∓/g, '\\mp')
+
+    // Calculus & Analysis
     .replace(/∞/g, '\\infty')
     .replace(/∫/g, '\\int')
     .replace(/∑/g, '\\sum')
@@ -38,29 +48,60 @@ function normalizeLatexForWord(markdown) {
     .replace(/√/g, '\\sqrt')
     .replace(/∂/g, '\\partial')
     .replace(/∇/g, '\\nabla')
+
+    // Greek letters (lowercase)
     .replace(/α/g, '\\alpha')
     .replace(/β/g, '\\beta')
     .replace(/γ/g, '\\gamma')
     .replace(/δ/g, '\\delta')
     .replace(/ε/g, '\\epsilon')
+    .replace(/ζ/g, '\\zeta')
+    .replace(/η/g, '\\eta')
     .replace(/θ/g, '\\theta')
+    .replace(/ι/g, '\\iota')
+    .replace(/κ/g, '\\kappa')
     .replace(/λ/g, '\\lambda')
     .replace(/μ/g, '\\mu')
+    .replace(/ν/g, '\\nu')
+    .replace(/ξ/g, '\\xi')
     .replace(/π/g, '\\pi')
+    .replace(/ρ/g, '\\rho')
     .replace(/σ/g, '\\sigma')
     .replace(/τ/g, '\\tau')
+    .replace(/υ/g, '\\upsilon')
     .replace(/φ/g, '\\phi')
+    .replace(/χ/g, '\\chi')
     .replace(/ψ/g, '\\psi')
     .replace(/ω/g, '\\omega')
-    .replace(/Δ/g, '\\Delta')
-    .replace(/Σ/g, '\\Sigma')
-    .replace(/Π/g, '\\Pi')
-    .replace(/Ω/g, '\\Omega');
 
-  // STEP 2: Normalize LaTeX commands (short form → long form for Word)
+    // Greek letters (uppercase)
+    .replace(/Γ/g, '\\Gamma')
+    .replace(/Δ/g, '\\Delta')
+    .replace(/Θ/g, '\\Theta')
+    .replace(/Λ/g, '\\Lambda')
+    .replace(/Ξ/g, '\\Xi')
+    .replace(/Π/g, '\\Pi')
+    .replace(/Σ/g, '\\Sigma')
+    .replace(/Φ/g, '\\Phi')
+    .replace(/Ψ/g, '\\Psi')
+    .replace(/Ω/g, '\\Omega')
+
+    // Logic
+    .replace(/∀/g, '\\forall')
+    .replace(/∃/g, '\\exists')
+    .replace(/¬/g, '\\neg')
+    .replace(/∧/g, '\\wedge')
+    .replace(/∨/g, '\\vee')
+    .replace(/⇒/g, '\\Rightarrow')
+    .replace(/⇔/g, '\\Leftrightarrow')
+    .replace(/→/g, '\\rightarrow')
+    .replace(/←/g, '\\leftarrow');
+
+  // STEP 2: Normalize LaTeX short forms to long forms (Word compatibility)
+  // Only do this for comparison operators where Word prefers long form
   result = result
-    .replace(/\\le\b/g, '\\leq')          // Normalize \le → \leq
-    .replace(/\\ge\b/g, '\\geq');         // Normalize \ge → \geq
+    .replace(/\\le\b/g, '\\leq')
+    .replace(/\\ge\b/g, '\\geq');
 
   console.log('[Normalize] Output sample:', result.substring(0, 300));
   return result;
@@ -690,7 +731,8 @@ function addExportButtonsToMessage(messageElement, platform) {
         latexAnnotations.forEach(annotation => {
           // Get raw LaTeX code - preserve backslashes!
           let latexCode = annotation.textContent;
-          console.log('[LaTeX] Original:', latexCode);
+          console.log('[LaTeX] Original annotation:', latexCode);
+          console.log('[LaTeX] Backslash count:', (latexCode.match(/\\/g) || []).length);
 
           // En dıştaki katex elementini bul
           let katexElement = annotation.closest('.katex');
@@ -699,9 +741,10 @@ function addExportButtonsToMessage(messageElement, platform) {
             const isBlock = katexElement.classList.contains('katex-display');
             const wrapper = isBlock ? '$$' : '$';
 
-            // IMPORTANT: Use template literal to preserve backslashes
-            const latexText = `${wrapper}${latexCode}${wrapper}`;
-            console.log('[LaTeX] Converted to:', latexText);
+            // Use string concatenation to preserve backslashes (safer than template literal)
+            const latexText = wrapper + latexCode + wrapper;
+            console.log('[LaTeX] Final markdown:', latexText);
+            console.log('[LaTeX] Final backslash count:', (latexText.match(/\\/g) || []).length);
 
             // Create text node with preserved LaTeX
             const textNode = document.createTextNode(latexText);
