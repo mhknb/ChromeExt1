@@ -1,28 +1,15 @@
-/* Content script styles - Floating export buttons (top-right corner) */
+/* Content script styles - Export buttons aligned to right */
 
 .ai-export-buttons {
-  position: absolute;
-  top: 12px;
-  right: 12px;
   display: flex;
+  justify-content: flex-end;
   gap: 6px;
   padding: 8px;
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 10;
+  margin-top: 12px;
   flex-wrap: nowrap;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .ai-export-buttons {
-    background: rgba(30, 30, 30, 0.95);
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-}
+/* Dark mode support - no special styling needed for container */
 
 .ai-export-btn {
   padding: 6px;
@@ -116,9 +103,3 @@
   75% { transform: translateX(4px); }
 }
 
-/* Ensure parent container has position: relative for absolute positioning */
-article[data-testid^="conversation-turn"],
-.message-container,
-[data-message-author-role] {
-  position: relative !important;
-}

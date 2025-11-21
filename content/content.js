@@ -886,11 +886,8 @@ function addExportButtonsToMessage(messageElement, platform) {
     });
   });
 
-  // Ensure message element has position: relative for absolute positioning
-  messageElement.style.position = 'relative';
-
-  // Add buttons to message element (not targetContainer) for top-right positioning
-  messageElement.appendChild(buttonsContainer);
+  // Add buttons to target container (at the bottom, right-aligned)
+  targetContainer.appendChild(buttonsContainer);
 
   // Duplicate eklemeyi önlemek için flag
   messageElement.setAttribute('data-export-buttons-added', 'true');
