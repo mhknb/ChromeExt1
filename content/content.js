@@ -639,8 +639,11 @@ async function loadPdfConverter() {
 
     script.onload = () => {
       console.log('[PDF] Script loaded successfully');
+      console.log('[PDF] window.PdfConverterBundled:', typeof window.PdfConverterBundled);
       if (window.PdfConverterBundled) {
         console.log('[PDF] Converter available on window');
+        console.log('[PDF] Converter type:', typeof window.PdfConverterBundled);
+        console.log('[PDF] Converter.default:', typeof window.PdfConverterBundled.default);
         resolve();
       } else {
         console.error('[PDF] Script loaded but PdfConverterBundled not found on window');
@@ -676,7 +679,13 @@ async function downloadPdf(content, settings) {
     console.log('[downloadPdf] Starting PDF export with PdfConverterBundled');
     console.log('[downloadPdf] Content length:', content.length);
 
-    const converter = new window.PdfConverterBundled();
+    // Handle both direct export and module export with default
+    const ConverterClass = typeof window.PdfConverterBundled === 'function'
+      ? window.PdfConverterBundled
+      : window.PdfConverterBundled.default;
+
+    console.log('[downloadPdf] Using converter class:', typeof ConverterClass);
+    const converter = new ConverterClass();
     await converter.exportToPdf(content);
 
     console.log('[downloadPdf] PDF export completed successfully');
