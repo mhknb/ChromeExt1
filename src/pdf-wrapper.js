@@ -268,5 +268,10 @@ class PdfConverterBundled {
   }
 }
 
-// Webpack will automatically assign to window.PdfConverterBundled via libraryTarget: 'window'
+// Export the class
 export default PdfConverterBundled;
+
+// Manually assign to window to ensure it's available in content script context
+if (typeof window !== 'undefined') {
+  window.PdfConverterBundled = PdfConverterBundled;
+}
