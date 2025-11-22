@@ -269,4 +269,10 @@ class PdfConverterBundled {
 }
 
 // Export as global window object for content script
+// Explicitly assign to window to ensure availability
+if (typeof window !== 'undefined') {
+  window.PdfConverterBundled = PdfConverterBundled;
+  console.log('[PDF Wrapper] PdfConverterBundled assigned to window');
+}
+
 export default PdfConverterBundled;
