@@ -623,21 +623,43 @@ async function downloadRtf(content, settings) {
 // Dynamically load PDF converter
 async function loadPdfConverter() {
   if (window.PdfConverterBundled) {
+    console.log('[PDF] Converter already loaded');
     return; // Already loaded
   }
 
+  console.log('[PDF] Loading PDF converter...');
+  const scriptUrl = chrome.runtime.getURL('lib/pdf-converter-bundled.js');
+  console.log('[PDF] Script URL:', scriptUrl);
+
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('lib/pdf-converter-bundled.js');
+    script.src = scriptUrl;
+    script.type = 'text/javascript';
+    script.async = true;
+
     script.onload = () => {
-      console.log('[PDF] Converter loaded successfully');
-      resolve();
+      console.log('[PDF] Script loaded successfully');
+      if (window.PdfConverterBundled) {
+        console.log('[PDF] Converter available on window');
+        resolve();
+      } else {
+        console.error('[PDF] Script loaded but PdfConverterBundled not found on window');
+        reject(new Error('PDF converter yüklenemedi - window.PdfConverterBundled bulunamadı'));
+      }
     };
-    script.onerror = () => {
-      console.error('[PDF] Failed to load converter');
-      reject(new Error('PDF converter yüklenemedi'));
+
+    script.onerror = (error) => {
+      console.error('[PDF] Script load error:', error);
+      console.error('[PDF] Error details:', {
+        type: error.type,
+        target: error.target,
+        src: script.src
+      });
+      reject(new Error('PDF converter script yüklenemedi. Lütfen uzantıyı yeniden yükleyin.'));
     };
+
     document.head.appendChild(script);
+    console.log('[PDF] Script tag appended to head');
   });
 }
 
