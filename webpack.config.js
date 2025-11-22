@@ -60,11 +60,9 @@ module.exports = [
     output: {
       filename: 'pdf-converter-bundled.js',
       path: path.resolve(__dirname, 'lib'),
-      library: {
-        name: 'PdfConverterBundled',
-        type: 'var',
-        export: 'default'
-      }
+      library: 'PdfConverterBundled',
+      libraryTarget: 'window',
+      libraryExport: 'default'
     },
     resolve: {
       extensions: ['.js', '.mjs'],
