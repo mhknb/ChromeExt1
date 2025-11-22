@@ -620,10 +620,33 @@ async function downloadRtf(content, settings) {
   URL.revokeObjectURL(url);
 }
 
+// Dynamically load PDF converter
+async function loadPdfConverter() {
+  if (window.PdfConverterBundled) {
+    return; // Already loaded
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('lib/pdf-converter-bundled.js');
+    script.onload = () => {
+      console.log('[PDF] Converter loaded successfully');
+      resolve();
+    };
+    script.onerror = () => {
+      console.error('[PDF] Failed to load converter');
+      reject(new Error('PDF converter yüklenemedi'));
+    };
+    document.head.appendChild(script);
+  });
+}
+
 // PDF dosyası oluştur ve indir
 async function downloadPdf(content, settings) {
   try {
-    // Use PdfConverterBundled from lib/pdf-converter-bundled.js
+    // Dynamically load PDF converter if not already loaded
+    await loadPdfConverter();
+
     if (typeof window.PdfConverterBundled === 'undefined') {
       throw new Error('PDF converter yüklenemedi. Sayfayı yenileyin ve tekrar deneyin.');
     }
