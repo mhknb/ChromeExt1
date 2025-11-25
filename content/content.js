@@ -522,6 +522,11 @@ async function handleExportTxt(platform, settings) {
 // DOCX export handler
 async function handleExportDocx(platform, settings) {
   try {
+    // Check if DOCX converter is available
+    if (typeof window.DocxConverterBundled === 'undefined') {
+      throw new Error('DOCX dönüştürücü yüklenmedi. Lütfen sayfayı yenileyin ve tekrar deneyin.');
+    }
+
     const content = extractLastMessage(platform);
     if (!content) {
       throw new Error('Mesaj bulunamadı');
@@ -583,10 +588,15 @@ async function downloadDocx(content, settings) {
   try {
     // Use DocxConverterBundled from lib/docx-converter-bundled.js
     if (typeof window.DocxConverterBundled === 'undefined') {
-      throw new Error('DOCX converter yüklenemedi');
+      console.error('[DOCX] DocxConverterBundled not found on window');
+      console.error('[DOCX] Available on window:', Object.keys(window).filter(k => k.includes('Converter')));
+      throw new Error('DOCX converter yüklenemedi. Lütfen sayfayı yenileyin ve tekrar deneyin.');
     }
 
+    console.log('[DOCX] Converter found, creating instance');
     const converter = new window.DocxConverterBundled();
+
+    console.log('[DOCX] Converting markdown to DOCX');
     const docxBlob = await converter.convertMarkdownToDocx(content);
 
     const url = URL.createObjectURL(docxBlob);
@@ -597,8 +607,11 @@ async function downloadDocx(content, settings) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    console.log('[DOCX] Export completed successfully');
   } catch (error) {
-    console.error('DOCX generation failed:', error);
+    console.error('[DOCX] Generation failed:', error);
+    alert(`DOCX oluşturulamadı: ${error.message}\n\nLütfen sayfayı yenileyin ve tekrar deneyin.`);
     throw error;
   }
 }
@@ -777,17 +790,34 @@ function createPdfHtmlContent(content, settings) {
 
 // Sayfa yüklendiğinde initialize et
 (function initialize() {
-  console.log('AI Content Exporter loaded');
+  console.log('[AI Exporter] Content script loaded');
+
+  // Check if converters are available
+  const checkConverters = () => {
+    const docxAvailable = typeof window.DocxConverterBundled !== 'undefined';
+    const pdfAvailable = typeof window.PdfConverterBundled !== 'undefined';
+
+    console.log('[AI Exporter] Converter status:', {
+      docx: docxAvailable ? 'loaded' : 'not loaded',
+      pdf: pdfAvailable ? 'loaded (will load on demand)' : 'not loaded (will load on demand)'
+    });
+
+    if (!docxAvailable) {
+      console.warn('[AI Exporter] DOCX converter not loaded yet - it should be available from docx-converter-bundled.js');
+    }
+  };
 
   // Her AI mesajına butonları ekle
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
+      checkConverters();
       addExportButtonsToAllMessages();
       observeNewMessages();
     });
   } else {
     // DOM zaten hazır
     setTimeout(() => {
+      checkConverters();
       addExportButtonsToAllMessages();
       observeNewMessages();
     }, 1000);
