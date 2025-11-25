@@ -6,7 +6,20 @@
 import katex from 'katex';
 import html2pdf from 'html2pdf.js';
 import { marked } from 'marked';
-import 'katex/dist/katex.min.css';
+// Note: KaTeX CSS is not imported here to keep bundle size small
+// KaTeX injects its own styles at runtime
+
+// Inject KaTeX CSS if not already loaded
+function injectKatexCSS() {
+  if (!document.getElementById('katex-css')) {
+    const link = document.createElement('link');
+    link.id = 'katex-css';
+    link.rel = 'stylesheet';
+    link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
+    link.crossOrigin = 'anonymous';
+    document.head.appendChild(link);
+  }
+}
 
 class PdfConverterBundled {
   /**
@@ -69,6 +82,9 @@ class PdfConverterBundled {
     try {
       console.log('[PDF] Starting PDF export');
       console.log('[PDF] Markdown length:', markdown.length);
+
+      // Inject KaTeX CSS
+      injectKatexCSS();
 
       // Step 1: Convert markdown to HTML with KaTeX
       const htmlContent = await this.markdownToHtmlWithKatex(markdown);
@@ -252,5 +268,10 @@ class PdfConverterBundled {
   }
 }
 
-// Export as global window object for content script
+// Export the class
 export default PdfConverterBundled;
+
+// Manually assign to window to ensure it's available in content script context
+if (typeof window !== 'undefined') {
+  window.PdfConverterBundled = PdfConverterBundled;
+}

@@ -57,4 +57,10 @@ class DocxConverterBundled {
   }
 }
 
+// Export the class
 export default DocxConverterBundled;
+
+// Manually assign to window to ensure it's available in content script context
+if (typeof window !== 'undefined') {
+  window.DocxConverterBundled = DocxConverterBundled;
+}

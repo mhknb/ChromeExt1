@@ -32,7 +32,7 @@
         "https://gemini.google.com/*",
         "https://chat.deepseek.com/*"
       ],
-      "js": ["lib/docx-converter-bundled.js", "lib/pdf-converter-bundled.js", "content/content.js"],
+      "js": ["lib/docx-converter-bundled.js", "content/content.js"],
       "css": ["content/content.css"],
       "run_at": "document_end"
     }
