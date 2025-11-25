@@ -5,12 +5,47 @@
 
 import katex from 'katex';
 import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
 import { marked } from 'marked';
 import htmlToPdfmake from 'html-to-pdfmake';
 
-// Set up pdfMake fonts
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+// Load fonts dynamically from CDN to avoid UTF-8 encoding issues
+async function loadPdfFonts() {
+  if (pdfMake.vfs) {
+    return; // Already loaded
+  }
+
+  try {
+    // Load fonts from CDN
+    const response = await fetch('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js');
+    const fontsCode = await response.text();
+
+    // Execute the fonts code to populate pdfMake.vfs
+    // The CDN file defines pdfMake.vfs
+    const script = document.createElement('script');
+    script.textContent = fontsCode;
+    document.head.appendChild(script);
+    document.head.removeChild(script);
+
+    console.log('[PDF] Fonts loaded from CDN');
+  } catch (error) {
+    console.warn('[PDF] Failed to load fonts from CDN, using default fonts:', error);
+    // Fallback: use standard fonts without custom fonts
+    pdfMake.fonts = {
+      Roboto: {
+        normal: 'Helvetica',
+        bold: 'Helvetica-Bold',
+        italics: 'Helvetica-Oblique',
+        bolditalics: 'Helvetica-BoldOblique'
+      },
+      Courier: {
+        normal: 'Courier',
+        bold: 'Courier-Bold',
+        italics: 'Courier-Oblique',
+        bolditalics: 'Courier-BoldOblique'
+      }
+    };
+  }
+}
 
 class PdfConverterBundled {
   /**
@@ -75,6 +110,9 @@ class PdfConverterBundled {
     try {
       console.log('[PDF] Starting PDF export with pdfmake');
       console.log('[PDF] Markdown length:', markdown.length);
+
+      // Step 0: Load fonts dynamically
+      await loadPdfFonts();
 
       // Step 1: Convert markdown to HTML with KaTeX
       const htmlContent = await this.markdownToHtmlWithKatex(markdown);
