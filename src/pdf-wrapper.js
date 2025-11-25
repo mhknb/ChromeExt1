@@ -1,59 +1,97 @@
 /**
  * PDF Converter Wrapper for Content Script
- * Uses pdfmake with html-to-pdfmake for vector-based PDF generation
+ * All dependencies loaded from CDN to ensure UTF-8 compliance
  */
 
-import katex from 'katex';
-import pdfMake from 'pdfmake/build/pdfmake';
-import { marked } from 'marked';
-import htmlToPdfmake from 'html-to-pdfmake';
+// Load all dependencies from CDN to avoid UTF-8 encoding issues with binary data
+let allLibsLoaded = false;
 
-// Load fonts dynamically from CDN to avoid UTF-8 encoding issues
-async function loadPdfFonts() {
-  if (pdfMake.vfs) {
-    return; // Already loaded
+async function loadAllLibraries() {
+  if (allLibsLoaded && window.pdfMake && window.htmlToPdfmake && window.katex && window.marked) {
+    return {
+      pdfMake: window.pdfMake,
+      htmlToPdfmake: window.htmlToPdfmake,
+      katex: window.katex,
+      marked: window.marked
+    };
   }
 
   try {
-    // Load fonts from CDN
-    const response = await fetch('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js');
-    const fontsCode = await response.text();
+    console.log('[PDF] Loading all libraries from CDN...');
 
-    // Execute the fonts code to populate pdfMake.vfs
-    // The CDN file defines pdfMake.vfs
-    const script = document.createElement('script');
-    script.textContent = fontsCode;
-    document.head.appendChild(script);
-    document.head.removeChild(script);
+    // Load KaTeX for LaTeX rendering
+    await loadScript('https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js');
+    await loadStylesheet('https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css');
 
-    console.log('[PDF] Fonts loaded from CDN');
-  } catch (error) {
-    console.warn('[PDF] Failed to load fonts from CDN, using default fonts:', error);
-    // Fallback: use standard fonts without custom fonts
-    pdfMake.fonts = {
-      Roboto: {
-        normal: 'Helvetica',
-        bold: 'Helvetica-Bold',
-        italics: 'Helvetica-Oblique',
-        bolditalics: 'Helvetica-BoldOblique'
-      },
-      Courier: {
-        normal: 'Courier',
-        bold: 'Courier-Bold',
-        italics: 'Courier-Oblique',
-        bolditalics: 'Courier-BoldOblique'
-      }
+    // Load marked for markdown parsing
+    await loadScript('https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js');
+
+    // Load pdfMake library
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js');
+
+    // Load pdfMake fonts
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js');
+
+    // Load html-to-pdfmake
+    await loadScript('https://cdn.jsdelivr.net/npm/html-to-pdfmake@2.5.32/browser.js');
+
+    if (!window.pdfMake || !window.htmlToPdfmake || !window.katex || !window.marked) {
+      throw new Error('Some libraries failed to load from CDN');
+    }
+
+    allLibsLoaded = true;
+    console.log('[PDF] All libraries loaded successfully from CDN');
+    return {
+      pdfMake: window.pdfMake,
+      htmlToPdfmake: window.htmlToPdfmake,
+      katex: window.katex,
+      marked: window.marked
     };
+  } catch (error) {
+    console.error('[PDF] Failed to load libraries:', error);
+    throw new Error('PDF kütüphaneleri yüklenemedi. İnternet bağlantınızı kontrol edin.');
   }
+}
+
+// Helper to load external scripts
+function loadScript(url) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = url;
+    script.type = 'text/javascript';
+    script.async = false;
+
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+
+    document.head.appendChild(script);
+  });
+}
+
+// Helper to load external stylesheets
+function loadStylesheet(url) {
+  return new Promise((resolve, reject) => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url;
+    link.crossOrigin = 'anonymous';
+
+    link.onload = () => resolve();
+    link.onerror = () => reject(new Error(`Failed to load stylesheet: ${url}`));
+
+    document.head.appendChild(link);
+  });
 }
 
 class PdfConverterBundled {
   /**
    * Convert Markdown to HTML with KaTeX-rendered formulas
    * @param {string} markdown - Markdown content with LaTeX formulas
+   * @param {object} katex - KaTeX library
+   * @param {object} marked - Marked library
    * @returns {Promise<string>} - HTML string with rendered KaTeX formulas
    */
-  async markdownToHtmlWithKatex(markdown) {
+  async markdownToHtmlWithKatex(markdown, katex, marked) {
     let html = markdown;
 
     console.log('[PDF] Processing markdown with LaTeX formulas');
@@ -93,7 +131,7 @@ class PdfConverterBundled {
 
     // Step 3: Convert remaining markdown to HTML
     console.log('[PDF] Converting markdown to HTML with marked');
-    html = marked(html);
+    html = marked.parse(html);
 
     console.log('[PDF] HTML conversion complete, length:', html.length);
     return html;
@@ -111,11 +149,11 @@ class PdfConverterBundled {
       console.log('[PDF] Starting PDF export with pdfmake');
       console.log('[PDF] Markdown length:', markdown.length);
 
-      // Step 0: Load fonts dynamically
-      await loadPdfFonts();
+      // Step 0: Load all libraries from CDN
+      const { pdfMake, htmlToPdfmake, katex, marked } = await loadAllLibraries();
 
       // Step 1: Convert markdown to HTML with KaTeX
-      const htmlContent = await this.markdownToHtmlWithKatex(markdown);
+      const htmlContent = await this.markdownToHtmlWithKatex(markdown, katex, marked);
 
       // Step 2: Create styled container and attach to DOM (required for html-to-pdfmake)
       tempElement = document.createElement('div');
