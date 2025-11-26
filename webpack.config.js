@@ -100,7 +100,9 @@ module.exports = [
     optimization: {
       minimize: true,
       // Ensure no binary data in runtime
-      runtimeChunk: false
+      runtimeChunk: false,
+      // Disable code splitting to prevent chunk files
+      splitChunks: false
     }
   }
 ];
