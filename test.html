@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Content Exporter Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-content {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        h1 { color: #333; }
+        .instructions {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Content Exporter - Test Page</h1>
+    
+    <div class="instructions">
+        <h2>Instructions:</h2>
+        <ol>
+            <li>Close the file picker dialog in Chrome</li>
+            <li>Manually navigate to: <code>/Users/hakanb/Documents/Projects/ChromeExt1</code></li>
+            <li>Click "Select" to load the extension</li>
+            <li>Once loaded, visit ChatGPT, Claude, Gemini, or DeepSeek</li>
+            <li>The extension should add export buttons to AI responses</li>
+        </ol>
+    </div>
+
+    <div class="test-content">
+        <h2>Extension Features:</h2>
+        <ul>
+            <li>✅ Clean text copy (removes markdown)</li>
+            <li>✅ Export to TXT</li>
+            <li>✅ Export to DOCX (with LaTeX support)</li>
+            <li>✅ Export to PDF (with KaTeX rendering)</li>
+        </ul>
+        
+        <h3>Supported Platforms:</h3>
+        <ul>
+            <li>ChatGPT (chat.openai.com, chatgpt.com)</li>
+            <li>Claude (claude.ai)</li>
+            <li>Gemini (gemini.google.com)</li>
+            <li>DeepSeek (chat.deepseek.com)</li>
+        </ul>
+    </div>
+
+    <div class="test-content">
+        <h2>Troubleshooting:</h2>
+        <p><strong>If the extension doesn't load:</strong></p>
+        <ol>
+            <li>Make sure Developer Mode is enabled in chrome://extensions/</li>
+            <li>Check that all files are present in the directory</li>
+            <li>Try refreshing the extensions page</li>
+            <li>Check the console for any error messages</li>
+        </ol>
+    </div>
+</body>
+</html>

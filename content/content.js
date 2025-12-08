@@ -372,6 +372,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
+  if (request.action === 'exportMd') {
+    handleExportMd(request.platform, request.settings)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
   if (request.action === 'exportDocx') {
     handleExportDocx(request.platform, request.settings)
       .then(result => sendResponse(result))
@@ -380,7 +387,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'exportPdf') {
-    handleExportPdf(request.platform, request.settings)
+    handleExportPdf(request.platform, request.quality, request.settings)
       .then(result => sendResponse(result))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
@@ -519,6 +526,30 @@ async function handleExportTxt(platform, settings) {
   }
 }
 
+// Markdown export handler
+async function handleExportMd(platform, settings) {
+  try {
+    const content = extractLastMessage(platform);
+    if (!content) {
+      throw new Error('Mesaj bulunamadı');
+    }
+
+    // For markdown, preserve formatting but remove platform headers
+    const processedContent = content
+      .replace(/(^|\n)(ChatGPT|Claude|Gemini|DeepSeek)\s+(said|söyledi):\s*/gi, '$1')
+      .replace(/(^|\n)(ChatGPT|Claude|Gemini|DeepSeek)\s*(\n|$)/gi, '$1')
+      .replace(/^\s*(ChatGPT|Claude|Gemini|DeepSeek)\s+(said|söyledi):\s*/i, '')
+      .trim();
+
+    await downloadMd(processedContent, settings);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Markdown export error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // DOCX export handler
 async function handleExportDocx(platform, settings) {
   try {
@@ -547,7 +578,7 @@ async function handleExportDocx(platform, settings) {
 }
 
 // PDF export handler
-async function handleExportPdf(platform, settings) {
+async function handleExportPdf(platform, quality, settings) {
   try {
     const content = extractLastMessage(platform);
     if (!content) {
@@ -558,7 +589,7 @@ async function handleExportPdf(platform, settings) {
       ? content
       : cleanMarkdown(content, settings);
 
-    await downloadPdf(processedContent, settings);
+    await downloadPdf(processedContent, quality, settings);
 
     return { success: true };
   } catch (error) {
@@ -577,6 +608,22 @@ async function downloadTxt(content, settings) {
   const a = document.createElement('a');
   a.href = url;
   a.download = `ai-export-${Date.now()}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Markdown dosyası oluştur ve indir
+async function downloadMd(content, settings) {
+  const blob = new Blob([content], {
+    type: 'text/markdown;charset=utf-8'
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ai-export-${Date.now()}.md`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -680,26 +727,46 @@ async function loadPdfConverter() {
 }
 
 // PDF dosyası oluştur ve indir
-async function downloadPdf(content, settings) {
+async function downloadPdf(content, quality, settings) {
   try {
-    // Dynamically load PDF converter if not already loaded
-    await loadPdfConverter();
-
-    if (typeof window.PdfConverterBundled === 'undefined') {
-      throw new Error('PDF converter yüklenemedi. Sayfayı yenileyin ve tekrar deneyin.');
-    }
-
-    console.log('[downloadPdf] Starting PDF export with PdfConverterBundled');
+    console.log('[downloadPdf] Starting PDF export with quality:', quality);
     console.log('[downloadPdf] Content length:', content.length);
 
-    // Handle both direct export and module export with default
-    const ConverterClass = typeof window.PdfConverterBundled === 'function'
-      ? window.PdfConverterBundled
-      : window.PdfConverterBundled.default;
+    if (quality === 'quality') {
+      // Use quality PDF exporter
+      if (typeof window.PdfQualityExporter === 'undefined') {
+        console.log('[downloadPdf] Loading quality PDF exporter...');
+        await loadPdfQualityExporter();
+      }
 
-    console.log('[downloadPdf] Using converter class:', typeof ConverterClass);
-    const converter = new ConverterClass();
-    await converter.exportToPdf(content);
+      if (typeof window.PdfQualityExporter === 'undefined') {
+        throw new Error('Kaliteli PDF converter yüklenemedi. Sayfayı yenileyin ve tekrar deneyin.');
+      }
+
+      const exporter = new window.PdfQualityExporter();
+      const options = {
+        filename: `ai-export-quality-${Date.now()}.pdf`,
+        title: 'AI Export',
+        includeTOC: settings.pdfIncludeTOC || content.length > 5000,
+        includePageNumbers: settings.docxIncludeHeader,
+        includeHeader: settings.docxIncludeHeader,
+        includeFooter: settings.docxIncludeHeader
+      };
+      await exporter.exportToPdf(content, options);
+    } else {
+      // Use fast PDF exporter
+      if (typeof window.PdfConverterBundled === 'undefined') {
+        console.log('[downloadPdf] Loading fast PDF converter...');
+        await loadPdfConverter();
+      }
+
+      if (typeof window.PdfConverterBundled === 'undefined') {
+        throw new Error('Hızlı PDF converter yüklenemedi. Sayfayı yenileyin ve tekrar deneyin.');
+      }
+
+      const converter = new window.PdfConverterBundled();
+      await converter.exportToPdf(content);
+    }
 
     console.log('[downloadPdf] PDF export completed successfully');
   } catch (error) {
@@ -786,6 +853,96 @@ function createPdfHtmlContent(content, settings) {
 </body>
 </html>
   `;
+}
+
+// Dynamically load PDF converter using script tag injection
+// This bypasses Chrome's executeScript UTF-8 validation issues
+async function loadPdfConverter() {
+  // Check if already loaded
+  if (typeof window.PdfConverterBundled !== 'undefined') {
+    console.log('[PDF] Converter already loaded');
+    return;
+  }
+
+  console.log('[PDF] Loading converter via script tag...');
+
+  return new Promise((resolve, reject) => {
+    const scriptUrl = chrome.runtime.getURL('lib/pdf-converter-bundled.js');
+    const script = document.createElement('script');
+    script.src = scriptUrl;
+    script.type = 'text/javascript';
+
+    script.onload = () => {
+      console.log('[PDF] Script loaded, waiting for init...');
+      // Wait for the script to initialize
+      let attempts = 0;
+      const checkInterval = setInterval(() => {
+        attempts++;
+        if (typeof window.PdfConverterBundled !== 'undefined') {
+          clearInterval(checkInterval);
+          console.log('[PDF] Converter initialized successfully');
+          resolve();
+        } else if (attempts > 30) { // 3 seconds timeout
+          clearInterval(checkInterval);
+          console.error('[PDF] Converter loaded but not found in window');
+          reject(new Error('PDF converter başlatılamadı (Timeout)'));
+        }
+      }, 100);
+    };
+
+    script.onerror = (error) => {
+      console.error('[PDF] Script load failed:', error);
+      reject(new Error('PDF converter yüklenemedi'));
+    };
+
+    // Inject into page
+    (document.head || document.documentElement).appendChild(script);
+  });
+}
+
+// Dynamically load PDF quality exporter using script tag injection
+// This bypasses Chrome's executeScript UTF-8 validation issues
+async function loadPdfQualityExporter() {
+  // Check if already loaded
+  if (typeof window.PdfQualityExporter !== 'undefined') {
+    console.log('[PDF Quality] Exporter already loaded');
+    return;
+  }
+
+  console.log('[PDF Quality] Loading exporter via script tag...');
+
+  return new Promise((resolve, reject) => {
+    const scriptUrl = chrome.runtime.getURL('lib/pdf-quality-exporter-bundled.js');
+    const script = document.createElement('script');
+    script.src = scriptUrl;
+    script.type = 'text/javascript';
+
+    script.onload = () => {
+      console.log('[PDF Quality] Script loaded, waiting for init...');
+      // Wait for the script to initialize
+      let attempts = 0;
+      const checkInterval = setInterval(() => {
+        attempts++;
+        if (typeof window.PdfQualityExporter !== 'undefined') {
+          clearInterval(checkInterval);
+          console.log('[PDF Quality] Exporter initialized successfully');
+          resolve();
+        } else if (attempts > 30) { // 3 seconds timeout
+          clearInterval(checkInterval);
+          console.error('[PDF Quality] Exporter loaded but not found in window');
+          reject(new Error('PDF quality exporter başlatılamadı (Timeout)'));
+        }
+      }, 100);
+    };
+
+    script.onerror = (error) => {
+      console.error('[PDF Quality] Script load failed:', error);
+      reject(new Error('PDF quality exporter yüklenemedi'));
+    };
+
+    // Inject into page
+    (document.head || document.documentElement).appendChild(script);
+  });
 }
 
 // Sayfa yüklendiğinde initialize et
@@ -876,6 +1033,11 @@ function addExportButtonsToMessage(messageElement, platform) {
         <path d="M64 0C28.7 0 0 28.7 0 64V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V160H256c-17.7 0-32-14.3-32-32V0H64zM256 0V128H384L256 0zM112 256h160c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16zm0 64h160c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16zm0 64h160c8.8 0 16 7.2 16 16s-7.2 16-16 16H112c-8.8 0-16-7.2-16-16s7.2-16 16-16z"/>
       </svg>
     </button>
+    <button class="ai-export-btn" data-action="md" title="Markdown olarak indir">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" width="18" height="18" fill="currentColor">
+        <path d="M593.8 59.1H46.2C20.7 59.1 0 79.8 0 105.2v301.5c0 25.5 20.7 46.2 46.2 46.2h547.7c25.5 0 46.2-20.7 46.1-46.1V105.2c0-25.4-20.7-46.1-46.2-46.1zM338.5 360.6H277v-120l-61.5 76.9-61.5-76.9v120H92.3V151.4h61.5l61.5 76.9 61.5-76.9h61.5v209.2zm135.3 3.1L381.5 256H443V151.4h61.5V256H566z"/>
+      </svg>
+    </button>
     <button class="ai-export-btn" data-action="docx" title="DOCX olarak indir">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width="18" height="18" fill="currentColor">
         <path d="M64 0C28.7 0 0 28.7 0 64V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V160H256c-17.7 0-32-14.3-32-32V0H64zM256 0V128H384L256 0zM111 257.1l26.8 89.2 31.6-90.3c3.4-9.6 12.5-16.1 22.7-16.1s19.3 6.4 22.7 16.1l31.6 90.3L273 257.1c3.8-12.7 17.2-19.9 29.9-16.1s19.9 17.2 16.1 29.9l-48 160c-3 10-12.1 16.9-22.4 17.1s-19.8-6.2-23.2-16.1L192 336.6l-33.3 95.3c-3.4 9.8-12.8 16.3-23.2 16.1s-19.5-7.1-22.4-17.1l-48-160c-3.8-12.7 3.4-26.1 16.1-29.9s26.1 3.4 29.9 16.1z"/>
@@ -883,7 +1045,7 @@ function addExportButtonsToMessage(messageElement, platform) {
     </button>
     <button class="ai-export-btn" data-action="pdf" title="PDF olarak indir">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width="18" height="18" fill="currentColor">
-        <path d="M64 0C28.7 0 0 28.7 0 64V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V160H256c-17.7 0-32-14.3-32-32V0H64zM256 0V128H384L256 0zM64 224H88c30.9 0 56 25.1 56 56s-25.1 56-56 56H80v32c0 8.8-7.2 16-16 16s-16-7.2-16-16V320 240c0-8.8 7.2-16 16-16zm24 80c13.3 0 24-10.7 24-24s-10.7-24-24-24H80v48h8zm72-64c0-8.8 7.2-16 16-16h24c26.5 0 48 21.5 48 48v64c0 26.5-21.5 48-48 48H176c-8.8 0-16-7.2-16-16V240zm32 112h8c8.8 0 16-7.2 16-16V272c0-8.8-7.2-16-16-16h-8v96zm96-112c0-8.8 7.2-16 16-16h48c8.8 0 16 7.2 16 16s-7.2 16-16 16H320v32h32c8.8 0 16 7.2 16 16s-7.2 16-16 16H320v48c0 8.8-7.2 16-16 16s-16-7.2-16-16V336 240z"/>
+        <path d="M64 0C28.7 0 0 28.7 0 64V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V160H256c-17.7 0-32-14.3-32-32V0H64zM256 0V128H384L256 0zM64 224H88c30.9 0 56 25.1 56 56s-25.1 56-56 56H80v32c0 8.8-7.2 16-16 16s-16-7.2-16-16V240c0-8.8 7.2-16 16-16zm24 80c13.3 0 24-10.7 24-24s-10.7-24-24-24H80v48h8zm72-64c0-8.8 7.2-16 16-16h24c26.5 0 48 21.5 48 48v64c0 26.5-21.5 48-48 48H176c-8.8 0-16-7.2-16-16V240zm32 112h8c8.8 0 16-7.2 16-16V272c0-8.8-7.2-16-16-16h-8v96zm96-112c0-8.8 7.2-16 16-16h48c8.8 0 16 7.2 16 16s-7.2 16-16 16H304v32h32c8.8 0 16 7.2 16 16s-7.2 16-16 16H304v48c0 8.8-7.2 16-16 16s-16-7.2-16-16V240z"/>
       </svg>
     </button>
   `;
@@ -1038,12 +1200,21 @@ async function handleExportAction(action, content, buttonElement) {
   const settings = await chrome.storage.sync.get({
     preserveCodeBlocks: true,
     preserveTables: true,
-    removeEmojis: false
+    removeEmojis: false,
+    docxEmbedFonts: true,
+    docxIncludeHeader: true,
+    pdfIncludeTOC: false,
+    pdfDefaultQuality: 'fast'
   });
 
+  // Generate unique export ID
+  const exportId = `export_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
   try {
-    // Butonu loading state'e al
+    // Disable button during export (Requirement 6.5)
+    buttonElement.disabled = true;
     buttonElement.classList.add('loading');
+    buttonElement.setAttribute('data-export-id', exportId);
 
     switch (action) {
       case 'copy':
@@ -1058,6 +1229,17 @@ async function handleExportAction(action, content, buttonElement) {
         showButtonSuccess(buttonElement, '✓');
         break;
 
+      case 'md':
+        // For markdown, preserve formatting but remove platform headers
+        const mdContent = content
+          .replace(/(^|\n)(ChatGPT|Claude|Gemini|DeepSeek)\s+(said|söyledi):\s*/gi, '$1')
+          .replace(/(^|\n)(ChatGPT|Claude|Gemini|DeepSeek)\s*(\n|$)/gi, '$1')
+          .replace(/^\s*(ChatGPT|Claude|Gemini|DeepSeek)\s+(said|söyledi):\s*/i, '')
+          .trim();
+        await downloadMd(mdContent, settings);
+        showButtonSuccess(buttonElement, '✓');
+        break;
+
       case 'docx':
         const docxContent = settings.preserveCodeBlocks ? content : cleanMarkdown(content, settings);
         await downloadDocx(docxContent, settings);
@@ -1065,14 +1247,22 @@ async function handleExportAction(action, content, buttonElement) {
         break;
 
       case 'pdf':
+        // Show quality selection - use default from settings
         const pdfContent = settings.preserveCodeBlocks ? content : cleanMarkdown(content, settings);
-        await downloadPdf(pdfContent, settings);
+        const quality = settings.pdfDefaultQuality || 'fast';
+        await downloadPdf(pdfContent, quality, settings);
         showButtonSuccess(buttonElement, '✓');
         break;
     }
   } catch (error) {
     console.error('Export failed:', error);
     showButtonError(buttonElement);
+  } finally {
+    // Re-enable button after export completes
+    setTimeout(() => {
+      buttonElement.disabled = false;
+      buttonElement.removeAttribute('data-export-id');
+    }, 2000);
   }
 }
 

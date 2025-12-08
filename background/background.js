@@ -42,6 +42,43 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const newValue = (result[key] || 0) + 1;
       chrome.storage.local.set({ [key]: newValue });
     });
+    return true;
+  }
+
+  // Script injection handler for Isolated World compatibility
+  if (request.action === 'injectScript') {
+    try {
+      if (!sender.tab) {
+        console.error('Sender tab not found');
+        sendResponse({ success: false, error: 'Sender tab not found' });
+        return false;
+      }
+
+      if (!sender.tab.id) {
+        console.error('Sender tab ID not found');
+        sendResponse({ success: false, error: 'Sender tab ID not found' });
+        return false;
+      }
+
+      chrome.scripting.executeScript({
+        target: { tabId: sender.tab.id },
+        files: request.files,
+        world: 'ISOLATED' // Explicitly inject into Isolated World (Content Script context)
+      })
+        .then(() => {
+          console.log('Script injected successfully:', request.files);
+          sendResponse({ success: true });
+        })
+        .catch((error) => {
+          console.error('Script injection failed:', error);
+          sendResponse({ success: false, error: error.message });
+        });
+      return true; // Keep message channel open for async response
+    } catch (error) {
+      console.error('Error in injectScript handler:', error);
+      sendResponse({ success: false, error: error.message });
+      return false;
+    }
   }
 });
 

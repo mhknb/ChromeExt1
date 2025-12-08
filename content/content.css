@@ -103,3 +103,41 @@
   75% { transform: translateX(4px); }
 }
 
+/* Disabled state (Requirement 6.5) */
+.ai-export-btn:disabled,
+.ai-export-btn.disabled-global {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.ai-export-btn.exporting {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* Loading spinner for performance manager */
+.loading-spinner {
+  animation: spin 0.6s linear infinite;
+}
+
+.loading-spinner circle {
+  stroke-dashoffset: 0;
+  animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
+}
+

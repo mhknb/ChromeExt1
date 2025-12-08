@@ -1,13 +1,16 @@
 {
-  "name": "chromeext1",
-  "version": "1.0.0",
-  "description": "**Reddit'te Tespit Edilen En Büyük Sorunları Çözen Chrome Extension**",
+  "name": "ai-content-exporter",
+  "version": "2.0.0",
+  "description": "AI Content Exporter - Multi-format export with enhanced quality for ChatGPT, Claude, Gemini & DeepSeek",
   "main": "index.js",
   "directories": {
     "lib": "lib"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --run --coverage",
     "build": "webpack --config webpack.config.js",
     "watch": "webpack --config webpack.config.js --watch"
   },
@@ -15,14 +18,28 @@
     "type": "git",
     "url": "http://local_proxy@127.0.0.1:27361/git/mhknb/ChromeExt1"
   },
-  "keywords": [],
+  "keywords": [
+    "chrome-extension",
+    "ai",
+    "chatgpt",
+    "claude",
+    "gemini",
+    "deepseek",
+    "export",
+    "markdown",
+    "docx",
+    "pdf",
+    "syntax-highlighting",
+    "latex",
+    "content-exporter"
+  ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@m2d/core": "^1.7.1",
     "@m2d/math": "^0.0.6",
     "@m2d/table": "^0.1.1",
-    "html-to-pdfmake": "^2.5.32",
+    "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.2",
     "jspdf": "^2.5.2",
@@ -37,13 +54,17 @@
     "unified": "^11.0.5"
   },
   "devDependencies": {
+    "@vitest/ui": "^4.0.14",
     "buffer": "^6.0.3",
     "css-loader": "^6.11.0",
+    "fast-check": "^4.3.0",
+    "jsdom": "^27.2.0",
     "path-browserify": "^1.0.1",
     "process": "^0.11.10",
     "stream-browserify": "^3.0.0",
     "style-loader": "^3.3.4",
     "util": "^0.12.5",
+    "vitest": "^4.0.14",
     "webpack": "^5.103.0",
     "webpack-cli": "^6.0.1"
   }

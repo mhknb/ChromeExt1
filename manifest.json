@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "AI Content Exporter - Clean Copy & Multi-Format Export",
-  "version": "1.1.0",
-  "description": "Copy AI responses without markdown, export to DOCX/PDF. Supports ChatGPT, Claude, Gemini & DeepSeek.",
+  "version": "2.0.0",
+  "description": "Export AI responses to Markdown, DOCX, and PDF with syntax highlighting, LaTeX support, and professional formatting. Supports ChatGPT, Claude, Gemini & DeepSeek.",
   "permissions": [
     "activeTab",
     "storage",
-    "clipboardWrite"
+    "clipboardWrite",
+    "scripting"
   ],
   "host_permissions": [
     "https://chat.openai.com/*",
@@ -32,8 +33,13 @@
         "https://gemini.google.com/*",
         "https://chat.deepseek.com/*"
       ],
-      "js": ["lib/docx-converter-bundled.js", "content/content.js"],
-      "css": ["content/content.css"],
+      "js": [
+        "lib/docx-converter-bundled.js",
+        "content/content.js"
+      ],
+      "css": [
+        "content/content.css"
+      ],
       "run_at": "document_end"
     }
   ],
@@ -47,7 +53,12 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["lib/*.js", "lib/fonts/*.woff", "lib/fonts/*.woff2", "lib/fonts/*.ttf"],
+      "resources": [
+        "lib/*.js",
+        "lib/*.woff",
+        "lib/*.woff2",
+        "lib/*.ttf"
+      ],
       "matches": [
         "https://chat.openai.com/*",
         "https://chatgpt.com/*",
